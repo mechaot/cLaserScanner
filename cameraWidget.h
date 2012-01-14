@@ -3,9 +3,10 @@
 
 #include <QWidget>
 #include <QPen>
+#include <QRect>
+#include <QPoint>
+#include <QPointF>
 
-class QRect;
-class QPointF;
 
 #define ROI_TYPE_POINT 1
 #define ROI_TYPE_LINE 2

@@ -7,9 +7,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
- /*   CenterDialog *dlg = new CenterDialog(this);
+    CenterDialog *dlg = new CenterDialog(this);
     setCentralWidget( dlg );
-    showMaximized();*/
+    showMaximized();
 }
 
 MainWindow::~MainWindow()

@@ -3,7 +3,7 @@
 
 #include <QMainWindow>
 #include <opencv.hpp>
-#
+
 
 #define MAX_OPENCV_CAMERA 4 ///< maximum number of cameras to try detection
 

@@ -147,7 +147,7 @@
        </layout>
       </item>
       <item>
-       <widget class="CameraWidget" name="cameraWidget" native="true">
+       <widget class="QWidget" name="cameraWidget" native="true">
         <property name="styleSheet">
          <string notr="true">border: 1px;
 border-style: solid;
@@ -283,7 +283,7 @@ border-style: solid;
     <item>
      <layout class="QVBoxLayout" name="verticalLayout" stretch="1,0">
       <item>
-       <widget class="HeightmapWidget" name="heightmapWidget" native="true"/>
+       <widget class="QWidget" name="heightmapWidget" native="true"/>
       </item>
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_6">
@@ -360,20 +360,6 @@ border-style: solid;
    </layout>
   </widget>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>CameraWidget</class>
-   <extends>QWidget</extends>
-   <header>cameraWidget</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>HeightmapWidget</class>
-   <extends>QWidget</extends>
-   <header>heightmapwidget</header>
-   <container>1</container>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections/>
 </ui>

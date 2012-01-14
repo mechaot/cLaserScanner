@@ -27,4 +27,4 @@ FORMS    += mainwindow.ui \
     centerdialog.ui
 
 
-# LIBS += -L$$PWD/opencv/lib -lopencv_highgui220 -lopencv_core220
+LIBS += -L$$PWD/opencv/lib -lopencv_highgui220 -lopencv_core220
