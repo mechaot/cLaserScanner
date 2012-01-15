@@ -8,7 +8,8 @@
 #define MAX_OPENCV_CAMERA 4 ///< maximum number of cameras to try detection
 
 namespace Ui {
-    class MainWindow;
+    class CenterDialog;
+    class centerDialog;
 }
 
 class CenterDialog : public QDialog
