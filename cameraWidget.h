@@ -7,7 +7,12 @@
 #include <QPoint>
 #include <QPointF>
 #include <matrix.h>
-#include <opencv.hpp>
+//#include <opencv.hpp>
+
+#include "opencv2/core/core.hpp"
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
+
 
 #define ROI_TYPE_POINT 1
 #define ROI_TYPE_LINE 2
@@ -33,9 +38,10 @@ signals:
     void tellMousePosition(int x, int y);
 
 public slots:
-    void setImage(QImage &img);
-    void setImage(cv::Mat &img);
+    void setImage(const QImage &img);
+    void setImage(const IplImage *img);
     void setRoi(QRect &roi, int roitype);
+    QRect roi(int riotype);
     void tellLaserPos(QPointF &pos);
     void tellLaserLine(float *line);
 

@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'centerdialog.ui'
 **
-** Created: Sun 15. Jan 16:59:26 2012
+** Created: Sun 15. Jan 17:51:51 2012
 **      by: Qt User Interface Compiler version 4.7.4
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!

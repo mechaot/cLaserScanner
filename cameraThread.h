@@ -11,11 +11,15 @@
 #define MODE_POINT      2       ///< mode: do look for point within pointroi
 #define MODE_LINE       4       ///< mode: do look for laser line within lineroi
 
-class cameraThread : public QThread
+
+/**
+  @class    CameraThread    threaded entity that captures camera frames, processes the image (find lasers) and propagates to gui widget
+  **/
+class CameraThread : public QThread
 {
     Q_OBJECT
 public:
-    explicit cameraThread(QObject *parent = 0);
+    explicit CameraThread(QObject *parent = 0);
     
 protected:
     void run();
@@ -26,12 +30,13 @@ public slots:
     void sendTerminationRequest();
     void setCvCamera(int cvIndex, CvCapture* cvCapture);
     void setCameraWidget(CameraWidget* target);
-    
+    void setRoi(QRect &roi, int roitype);
+
 private:
     int            captureFrame();
     void           setModeOfOperation(int mode);
     int            modeOfOperation();
-    int            findLaserData();
+    int            evaluateImage(IplImage *img);
 
 private:
     int            m_iMode;                 ///< mode of operation
@@ -41,6 +46,9 @@ private:
     CameraWidget*  m_camWidget;             ///< pointer to displaying widget
     IplImage*      m_iplImage;              ///< image as from opencv
     Matrix<double> m_matPoint;              ///< found laser point position
+    QRect          m_roiLine;
+    QRect          m_roiPoint;
+
 };
 
 #endif // CAMERATHREAD_H

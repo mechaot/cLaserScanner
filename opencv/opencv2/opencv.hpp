@@ -43,28 +43,18 @@
 #ifndef __OPENCV_ALL_HPP__
 #define __OPENCV_ALL_HPP__
 
-
-#ifndef ptrdiff_t
-	#if _WIN32
-		typedef int ptrdiff_t;
-	#else		//linux
-		typedef long int ptrdiff_t;
-	#endif
-#endif
-
-#include "core/core_c.h"
-#include "core/core.hpp"
-#include "flann/flann.hpp"
-#include "imgproc/imgproc_c.h"
-#include "imgproc/imgproc.hpp"
-#include "video/tracking.hpp"
-#include "video/background_segm.hpp"
-#include "features2d/features2d.hpp"
-#include "objdetect/objdetect.hpp"
-#include "calib3d/calib3d.hpp"
-#include "ml/ml.hpp"
-#include "highgui/highgui_c.h"
-#include "highgui/highgui.hpp"
-#include "contrib/contrib.hpp"
+#include "opencv2/core/core_c.h"
+#include "opencv2/core/core.hpp"
+#include "opencv2/flann/miniflann.hpp"
+#include "opencv2/imgproc/imgproc_c.h"
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/video/video.hpp"
+#include "opencv2/features2d/features2d.hpp"
+#include "opencv2/objdetect/objdetect.hpp"
+#include "opencv2/calib3d/calib3d.hpp"
+#include "opencv2/ml/ml.hpp"
+#include "opencv2/highgui/highgui_c.h"
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/contrib/contrib.hpp"
 
 #endif
