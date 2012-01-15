@@ -22,6 +22,7 @@ public:
 
 private slots:
     void findCameras(void);
+    void connectCamera(void);
 
 private:
     Ui::centerDialog *ui;

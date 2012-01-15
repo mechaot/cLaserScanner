@@ -635,3 +635,4 @@ template<typename type> QString Matrix<type>::ToString(const QString lineSep /* 
     }
     return str;
 }
+

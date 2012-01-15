@@ -20,12 +20,14 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     cameraWidget.cpp \
     centerDialog.cpp \
-    heightmapwidget.cpp
+    heightmapwidget.cpp \
+    cameraThread.cpp
 
 HEADERS  += mainwindow.h \
     cameraWidget.h \
     centerDialog.h \
-    heightmapwidget.h
+    heightmapwidget.h \
+    cameraThread.h
 
 FORMS    += mainwindow.ui \
     centerdialog.ui

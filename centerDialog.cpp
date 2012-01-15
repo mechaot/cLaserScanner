@@ -42,16 +42,46 @@ void CenterDialog::findCameras(void)
             if (dummy->height * dummy->width > 1) { //means: image is ok
                 ui->comboCameras->addItem( QString("cv: %1").arg(i) );
             }
-        } else {
-            ui->comboCameras->addItem("OpenCV error");
-            ui->comboCameras->setEnabled(false);
         }
     }
     if (ui->comboCameras->count() < 1) {
         ui->comboCameras->addItem("No camera found!");
         ui->comboCameras->setEnabled(false);
+        ui->buttonCamera->setEnabled(false);
+    } else { //cams found, activate the connect button
+        ui->buttonCamera->setEnabled(true);
     }
 }
+
+/**
+  @brief    try to connect to the selected opencv camera
+
+  we try to set the full-HD resolution
+  **/
+void CenterDialog::connectCamera(void)
+{
+    QString s(ui->comboCameras->currentText());
+    if (s.startsWith("cv: ")) {
+        s = s.remove(0,4);
+        bool ok;
+        int camIdx = s.toInt(&ok);
+        if (!ok) {
+            QMessageBox::critical(this,"Camera connect failed", "Could not read selected camera");
+        }
+        m_iCamera = camIdx;
+        m_cvCapture = cvCaptureFromCAM(m_iCamera);
+
+        cvSetCaptureProperty(m_cvCapture, CV_CAP_PROP_FRAME_WIDTH, 1920);
+        cvSetCaptureProperty(m_cvCapture, CV_CAP_PROP_FRAME_HEIGHT, 1080);
+    }
+}
+
+
+
+
+
+
+
 
 
 #endif // CENTERDIALOG_CPP

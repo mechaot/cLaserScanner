@@ -47,7 +47,7 @@ template<typename type> class Matrix;
 // typedef Matrix<double> DMatrix;
 // typedef Matrix<float>  FMatrix;
 
-#define SIMALI_RAYTRACER_FUNCTIONS          1      ///< define this to non-zero value to enable raytracer binding
+#define SIMALI_RAYTRACER_FUNCTIONS          0      ///< define this to non-zero value to enable raytracer binding
 #define SIMALI_USE_BV_FUNCTIONS             1      ///< define this to non-zero value to enable image processing functions
 #define SIMALI_USE_LAPACK                   1      ///< define this to non-zero value to enable the lapack enhanced functions, remember to update .pro-file accordingly if neccessary
 

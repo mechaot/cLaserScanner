@@ -6,7 +6,8 @@
 #include <QRect>
 #include <QPoint>
 #include <QPointF>
-
+#include <matrix.h>
+#include <opencv.hpp>
 
 #define ROI_TYPE_POINT 1
 #define ROI_TYPE_LINE 2
@@ -33,6 +34,7 @@ signals:
 
 public slots:
     void setImage(QImage &img);
+    void setImage(cv::Mat &img);
     void setRoi(QRect &roi, int roitype);
     void tellLaserPos(QPointF &pos);
     void tellLaserLine(float *line);

@@ -31,6 +31,15 @@ void CameraWidget::setImage(QImage &img)
 }
 
 /**
+  @brief    set image from image matrix
+  @param    img matrix class image
+  **/
+void CameraWidget::setImage(cv::Mat &img)
+{
+    //todo: image conversion
+}
+
+/**
   @brief    set coordinates of one of the rois (in image coords)
   @param    roi     roi coordinates
   @param    roitype type of roi to set {ROI_TYPE_POINT, ROI_TYPE_LINE}
