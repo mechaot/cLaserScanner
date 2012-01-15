@@ -3,7 +3,7 @@
 
 #include "centerDialog.h"
 #include "ui_centerdialog.h"
-
+#include <QtGui>
 
 CenterDialog::CenterDialog(QWidget *parent) :
     QDialog(parent),
@@ -13,7 +13,7 @@ CenterDialog::CenterDialog(QWidget *parent) :
     m_iCamera = -1;             //invalid --> no cam connected
     ui->setupUi(this);
     setLayout(ui->pageLayout);
-
+    //QMessageBox::critical(this, "CenterDialog", "Testpoint");
     //connect(ui->buttonCamera, SIGNAL(clicked()), this, SLOT(connectCamera));
     connect(ui->buttonCameraFind, SIGNAL(clicked()), this, SLOT(findCameras()));
 }

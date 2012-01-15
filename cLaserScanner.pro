@@ -6,14 +6,15 @@
 
 QT       += core gui
 
+include(QtException/QtException.pri)
+include(SiMaLi/SiMaLi.pri)
+
 TARGET = cLaserScanner
 TEMPLATE = app
 
 INCLUDEPATH += . opencv opencv/opencv2 QtException SiMaLi
 DEPENDPATH += . opencv opencv/opencv2 QtException SiMaLi
 
-include(QtException/QtException.pri)
-include(SiMaLi/SiMaLi.pri)
 
 SOURCES += main.cpp\
         mainwindow.cpp \

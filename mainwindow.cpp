@@ -9,15 +9,15 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    CenterDialog *dlg = new CenterDialog(this);
+    CenterDialog *dlg = new CenterDialog();
     if (!dlg) {
         QMessageBox::critical(this, "Error on inititalization", "The central dialog could not be constructed");
     }
     setCentralWidget( dlg );
-    showMaximized();
 
     connect(ui->actionQuit, SIGNAL(triggered()), this, SLOT(close()));
     connect(ui->actionAbout, SIGNAL(triggered()), this, SLOT(about()));
+    showMaximized();
 }
 
 MainWindow::~MainWindow()
