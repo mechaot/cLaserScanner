@@ -45,7 +45,7 @@ private:
     CvCapture*     m_cvCapture;             ///< pointer to capture device struct
     CameraWidget*  m_camWidget;             ///< pointer to displaying widget
     IplImage*      m_iplImage;              ///< image as from opencv
-    Matrix<double> m_matPoint;              ///< found laser point position
+    //Matrix<double> m_matPoint;              ///< found laser point position
     QRect          m_roiLine;
     QRect          m_roiPoint;
 

@@ -1,3 +1,4 @@
+#include "QtException.h"
 #include "cameraWidget.h"
 #include "QtGui"
 #include "QtCore"
@@ -71,7 +72,7 @@ void CameraWidget::setImage(const IplImage *img)
           char* pix;
 
           int y;
-          //#pragma omp parallel for private(y,pixval,pix,pDstBase)
+          /* //#pragma omp parallel for private(y,pixval,pix,pDstBase) */
           for(y=0; y < img->height; y++) {
               pDstBase = (UINT32*) m_image.scanLine(y);
               for(int x=0; x < img->width; x++) {

@@ -7,6 +7,7 @@
 #include "opencv2/calib3d/calib3d.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
+#include "QtException.h"
 
 using namespace cv;
 
@@ -42,8 +43,8 @@ CenterDialog::~CenterDialog()
   **/
 void CenterDialog::findCameras(void)
 {
-    ui->comboCameras->clear();
     ui->comboCameras->setEnabled(true);
+    ui->comboCameras->clear();
 
     for(int i = 0; i < MAX_OPENCV_CAMERA; i++) {
         CvCapture *capture = cvCaptureFromCAM(i);
@@ -54,7 +55,6 @@ void CenterDialog::findCameras(void)
             }
             cvReleaseCapture(&capture);
         }
-        ui->comboCameras->addItem("cv: 0");
     }
     if (ui->comboCameras->count() < 1) {
         ui->comboCameras->addItem("No camera found!");
@@ -86,8 +86,8 @@ void CenterDialog::connectCamera(bool connect)
             //m_cvCapture = cvCreateCameraCapture(-1);
             m_cvCapture = cvCreateCameraCapture(camIdx);
 
-            //cvSetCaptureProperty(m_cvCapture, CV_CAP_PROP_FRAME_WIDTH, 1920);
-            //cvSetCaptureProperty(m_cvCapture, CV_CAP_PROP_FRAME_HEIGHT, 1080);
+            cvSetCaptureProperty(m_cvCapture, CV_CAP_PROP_FRAME_WIDTH, 1920);
+            cvSetCaptureProperty(m_cvCapture, CV_CAP_PROP_FRAME_HEIGHT, 1080);
 
             double w = cvGetCaptureProperty(m_cvCapture, CV_CAP_PROP_FRAME_WIDTH);
             double h = cvGetCaptureProperty(m_cvCapture, CV_CAP_PROP_FRAME_HEIGHT);

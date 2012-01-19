@@ -6,7 +6,6 @@
 #include <QRect>
 #include <QPoint>
 #include <QPointF>
-#include <matrix.h>
 //#include <opencv.hpp>
 
 #include "opencv2/core/core.hpp"

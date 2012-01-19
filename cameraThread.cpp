@@ -90,10 +90,14 @@ void CameraThread::setRoi(QRect &roi, int roitype)
   @param    img     image to process
 
   @todo parallelize some tasks on multiple cores
+
+  ray: 5 pixels center; each wing 4 pix
 **/
 int CameraThread::evaluateImage(IplImage *img)
 {
 
+    //EX_THROW("Not implemented");
+    return 0;
 }
 
 /**
@@ -115,7 +119,16 @@ void CameraThread::run()
         }
 
         IplImage* hsv = cvCreateImage(cvSize(m_iplImage->width, m_iplImage->height), m_iplImage->depth, 3);
-        cvCvtColor(m_iplImage, hsv, CV_BGR2HSV);
+
+        //cvCvtColor(m_iplImage, hsv, CV_RGB2HLS);
+        //cvCvtColor(m_iplImage, hsv, CV_BGR2HSV);
+        //cvCvtColor(hsv, hsv, CV_RGB2BGR);
+        //double lineFilterCoeffs[] = { -3, -3, -3, 1, 1, 1, 2, 7, 11, 21, 11, 7, 2, 1, 1, 1, -3, -3, -3};
+        double lineFilterCoeffs[] = {-1, -2, 0, 0, 0, 1, 1, 2, 1, 1, 0, 0, 0, -2, -1};
+        CvMat lineFilter;
+        cvInitMatHeader( &lineFilter, 15, 1, CV_64FC1, lineFilterCoeffs);
+
+        cvFilter2D( m_iplImage ,hsv, &lineFilter, cvPoint(-1,-1));
 
         //if ( (m_iMode & MODE_IMAGE_OUT) && (m_camWidget) ) {
         if (m_camWidget) {
