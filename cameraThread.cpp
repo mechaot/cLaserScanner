@@ -1,4 +1,4 @@
-#include "CameraThread.h"
+#include "cameraThread.h"
 #include "QtException.h"
 #include <opencv.hpp>
 #include <QTime>

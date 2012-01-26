@@ -14,26 +14,30 @@ TEMPLATE = app
 INCLUDEPATH += . opencv opencv/opencv2  QtException
 DEPENDPATH += . opencv opencv/opencv2  QtException
 
-
 SOURCES += main.cpp\
         mainwindow.cpp \
     cameraWidget.cpp \
     centerDialog.cpp \
     heightmapwidget.cpp \
-    CameraThread.cpp
+    cameraThread.cpp
 
 HEADERS  += mainwindow.h \
     cameraWidget.h \
     centerDialog.h \
     heightmapwidget.h \
-    CameraThread.h
+    cameraThread.h
 
 FORMS    += mainwindow.ui \
     centerdialog.ui
 
-QMAKE_CXXFLAGS += -m32
+win32 {
+    QMAKE_CXXFLAGS += -m32
+    LIBS += -L$$PWD/opencv/lib -lopencv_highgui231 -lopencv_core231 -lopencv_imgproc231 -Lomp -lgomp
+}
 
+unix {
 
-LIBS += -L$$PWD/opencv/lib -lopencv_highgui231 -lopencv_core231 -lopencv_imgproc231 -Lomp -lgomp
+    LIBS += -L/usr/local/lib -lopencv_highgui -lopencv_core -lopencv_imgproc -Lop
+}
 
 

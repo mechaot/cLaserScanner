@@ -1,6 +1,6 @@
 #include <QtGui/QApplication>
-#include "QtException.h"
 #include "mainwindow.h"
+#include "QtException.h"
 
 int main(int argc, char *argv[])
 {
