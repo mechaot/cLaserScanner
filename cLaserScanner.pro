@@ -37,7 +37,7 @@ win32 {
 
 unix {
 
-    LIBS += -L/usr/local/lib -lopencv_highgui -lopencv_core -lopencv_imgproc -Lop
+    LIBS += -L/usr/local/lib -lopencv_highgui -lopencv_core -lopencv_imgproc -Lomp -lgomp
 }
 
 

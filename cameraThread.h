@@ -45,7 +45,7 @@ private:
     int            captureFrame();
     void           setModeOfOperation(int mode);
     int            modeOfOperation();
-    IplImage*            evaluateImage(IplImage *img);
+    IplImage*      evaluateImage(IplImage *img);
 
 private:
     int            m_iMode;                 ///< mode of operation

@@ -3,6 +3,11 @@
 #include <opencv.hpp>
 #include <QTime>
 
+#define USE_OPENMP      1       ///< use openmp multiprocessin library to speed up things
+
+#if USE_OPENMP
+    #include <omp.h>
+#endif
 
 CameraThread::CameraThread(QObject *parent) :
     QThread(parent)
@@ -122,18 +127,20 @@ void CameraThread::setRoi(const QRect &roi, int roitype)
   @brief    heart 1 of the laser scanner: extract point and line
   @param    img     image to process
 
-  @todo parallelize some tasks on multiple cores
+  cool thing: parallelize some tasks on multiple cores
 
-  ray: 5 pixels center; each wing 4 pix
+
 **/
 IplImage *CameraThread::evaluateImage(IplImage *img)
 {
-
-//    cv::Rect lRect( m_roiLine.left(), m_roiLine.top(), m_roiLine.right(), m_roiLine.bottom() );
-    //    cv::Mat lineImage = cv::Mat(img, lRect);
-
+    //QTime tic = QTime::currentTime();
+#if USE_OPENMP
+#pragma omp parallel NUM_THREADS(2)
+{
+    if (omp_get_thread_num() == 0 && m_roiPoint.width() > 0) {   //takes about 1-2 ms for reasonable roi
+#else
     if (m_roiPoint.width() > 0) {   //takes about 1-2 ms for reasonable roi
-        //QTime tic = QTime::currentTime();
+#endif
         cv::Rect pRect( m_roiPoint.left(), m_roiPoint.top(), m_roiPoint.width(), m_roiPoint.height() );
         //DEBUG(1, QString("Evaluate Point %1 %2 %3 %4").arg(m_roiPoint.left()).arg(m_roiPoint.top()).arg(m_roiPoint.right()).arg(m_roiPoint.bottom()));
 
@@ -151,12 +158,14 @@ IplImage *CameraThread::evaluateImage(IplImage *img)
         cvReleaseImage( &pointImage);
         //cvReleaseImage( &temp );
         //DEBUG(1, QString("Point: %1, %2").arg(maxloc.x).arg(maxloc.y));
-        //QTime toc = QTime::currentTime();
-        //DEBUG(1, QString("Took: %1 ms").arg( tic.msecsTo(toc)));
 
         emit pointPosition(maxloc.x + m_roiPoint.left(), maxloc.y + m_roiPoint.top());
     }
+#if USE_OPENMP
+    if (omp_get_thread_num() == 1 && m_roiLine.width() > 0) {
+#else
     if (m_roiLine.width() > 0) {
+#endif
         cv::Rect lRect( m_roiLine.left(), m_roiLine.top(), m_roiLine.width(), m_roiLine.height() );
         //DEBUG(1, QString("Evaluate Point %1 %2 %3 %4").arg(m_roiLine.left()).arg(m_roiLine.top()).arg(m_roiLine.right()).arg(m_roiLine.bottom()));
 
@@ -198,6 +207,11 @@ IplImage *CameraThread::evaluateImage(IplImage *img)
         cvReleaseImage( &temp );
         cvReleaseImage( &lineImage);
     }
+#if USE_OPENMP
+} //omp parallel
+#endif
+    //QTime toc = QTime::currentTime();
+    //DEBUG(1, QString("Took: %1 ms").arg( tic.msecsTo(toc)));
     return img;
 }
 
