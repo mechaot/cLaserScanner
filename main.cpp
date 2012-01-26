@@ -4,13 +4,12 @@
 
 int main(int argc, char *argv[])
 {
-    DEBUG_INIT("debug.txt");
-
     QApplication a(argc, argv);
+    DEBUG_INIT("debug.txt");
+    DBG("Debugging");
     MainWindow w;
     w.show();
     int ret = a.exec();
-
     DEBUG_CLOSE();
 
     return ret;

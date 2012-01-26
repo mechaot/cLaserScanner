@@ -1,6 +1,7 @@
 #include "CameraThread.h"
 #include "QtException.h"
 #include <opencv.hpp>
+#include <QTime>
 
 
 CameraThread::CameraThread(QObject *parent) :
@@ -10,6 +11,7 @@ CameraThread::CameraThread(QObject *parent) :
     m_cvCapture = NULL;
     m_camWidget = NULL;
     m_iplImage = NULL;
+    m_iLiveViewMode = MODE_LIVE_PREPROCESSED;
 }
 
 /**
@@ -63,6 +65,37 @@ void CameraThread::setCameraWidget(CameraWidget *target)
     //fetch roi
     m_roiLine = m_camWidget->roi(ROI_TYPE_LINE);
     m_roiPoint = m_camWidget->roi(ROI_TYPE_POINT);
+
+    connect(this, SIGNAL(pointPosition(int,int)), m_camWidget, SLOT(tellLaserPos(int,int)));
+    connect(m_camWidget, SIGNAL(roiChangedPoint(QRect)), this, SLOT(setRoiPoint(QRect)) );
+    connect(m_camWidget, SIGNAL(roiChangedLine(QRect)), this, SLOT(setRoiLine(QRect)));
+}
+
+/**
+  @brief    set live view mode
+  @param    mode mode to apply
+
+  determine which image should be sent to the widget
+  **/
+void CameraThread::setLiveViewMode(int mode)
+{
+    m_iLiveViewMode = mode;
+}
+
+/**
+  @brief    slot to set roi for point
+  **/
+void CameraThread::setRoiPoint(const QRect &roi)
+{
+    m_roiPoint = roi;
+}
+
+/**
+  @brief    slot to set roi for line
+  **/
+void CameraThread::setRoiLine(const QRect &roi)
+{
+    m_roiLine = roi;
 }
 
 /**
@@ -70,7 +103,7 @@ void CameraThread::setCameraWidget(CameraWidget *target)
   @param    roi     roi coordinates
   @param    roitype type of roi to set {ROI_TYPE_POINT, ROI_TYPE_LINE}
   **/
-void CameraThread::setRoi(QRect &roi, int roitype)
+void CameraThread::setRoi(const QRect &roi, int roitype)
 {
     if (roitype == ROI_TYPE_LINE) {
         m_roiLine = roi;
@@ -93,11 +126,79 @@ void CameraThread::setRoi(QRect &roi, int roitype)
 
   ray: 5 pixels center; each wing 4 pix
 **/
-int CameraThread::evaluateImage(IplImage *img)
+IplImage *CameraThread::evaluateImage(IplImage *img)
 {
 
-    //EX_THROW("Not implemented");
-    return 0;
+//    cv::Rect lRect( m_roiLine.left(), m_roiLine.top(), m_roiLine.right(), m_roiLine.bottom() );
+    //    cv::Mat lineImage = cv::Mat(img, lRect);
+
+    if (m_roiPoint.width() > 0) {   //takes about 1-2 ms for reasonable roi
+        //QTime tic = QTime::currentTime();
+        cv::Rect pRect( m_roiPoint.left(), m_roiPoint.top(), m_roiPoint.width(), m_roiPoint.height() );
+        //DEBUG(1, QString("Evaluate Point %1 %2 %3 %4").arg(m_roiPoint.left()).arg(m_roiPoint.top()).arg(m_roiPoint.right()).arg(m_roiPoint.bottom()));
+
+        cvSetImageROI(img,pRect);
+        // sub-image
+        IplImage *pointImage = cvCreateImage( cvSize(pRect.width, pRect.height), IPL_DEPTH_32F, 1 );
+        //IplImage *temp = cvCreateImage( cvSize(pRect.width, pRect.height), IPL_DEPTH_32F, 1 );
+        cvConvertScale(img,pointImage);
+        cvResetImageROI(img); // release image ROI
+
+        double min, max;
+        CvPoint maxloc;
+        cvSmooth( pointImage, pointImage, CV_GAUSSIAN, 31, 31);
+        cvMinMaxLoc( pointImage, &min, &max, NULL, &maxloc);
+        cvReleaseImage( &pointImage);
+        //cvReleaseImage( &temp );
+        //DEBUG(1, QString("Point: %1, %2").arg(maxloc.x).arg(maxloc.y));
+        //QTime toc = QTime::currentTime();
+        //DEBUG(1, QString("Took: %1 ms").arg( tic.msecsTo(toc)));
+
+        emit pointPosition(maxloc.x + m_roiPoint.left(), maxloc.y + m_roiPoint.top());
+    }
+    if (m_roiLine.width() > 0) {
+        cv::Rect lRect( m_roiLine.left(), m_roiLine.top(), m_roiLine.width(), m_roiLine.height() );
+        //DEBUG(1, QString("Evaluate Point %1 %2 %3 %4").arg(m_roiLine.left()).arg(m_roiLine.top()).arg(m_roiLine.right()).arg(m_roiLine.bottom()));
+
+        cvSetImageROI(img,lRect);
+        // sub-image
+        IplImage *lineImage = cvCreateImage( cvSize(lRect.width, lRect.height), IPL_DEPTH_32F, 1 );
+        IplImage *temp = cvCreateImage( cvSize(lRect.width, lRect.height), IPL_DEPTH_8U, 1 );
+        cvConvertScale(img,lineImage);
+        cvResetImageROI(img);
+
+        cvSmooth(lineImage, lineImage, CV_GAUSSIAN, 15,7);
+        //cvCvtColor(m_iplImage, gray, CV_RGB2GRAY);
+        //double lineFilterCoeffs[] = { -3, -2, -1, -1, 0, 1, 2, 5, 7, 11, 7, 5, 2, 1, 0, -1, -1, -2, -3};
+        //CvMat lineFilter;
+        //cvInitMatHeader( &lineFilter, 1, 19, CV_64FC1, lineFilterCoeffs);
+
+        //cvFilter2D( lineImage ,lineImage, &lineFilter, cvPoint(-1,-1));
+        //cvSmooth(grayF,grayF, CV_GAUSSIAN, 15, 1);
+
+        double maxval;
+        int   xpos;
+        DEBUG(1, QString("Sizeof(float): %1").arg(sizeof(float)));
+        for(int y = 0; y < lRect.height; y++) { //for every row search max
+            float *data = (float*) (lineImage->imageData + y * lineImage->widthStep);
+            maxval = *data;
+            xpos = 0;
+            for(int x = 1; x < lRect.width; x++)             {
+                ++data;
+                if (*data > maxval) {
+                    maxval = *data;
+                    xpos = x;
+                }
+            }
+
+            cvDrawCircle(img, cvPoint(xpos,y), 3, cvScalar(0xff), 1);
+        }
+
+
+        cvReleaseImage( &temp );
+        cvReleaseImage( &lineImage);
+    }
+    return img;
 }
 
 /**
@@ -118,27 +219,42 @@ void CameraThread::run()
             continue;
         }
 
-        IplImage* hsv = cvCreateImage(cvSize(m_iplImage->width, m_iplImage->height), m_iplImage->depth, 3);
+        IplImage* gray = cvCreateImage(cvSize(m_iplImage->width, m_iplImage->height), m_iplImage->depth, 1);
 
-        //cvCvtColor(m_iplImage, hsv, CV_RGB2HLS);
-        //cvCvtColor(m_iplImage, hsv, CV_BGR2HSV);
-        //cvCvtColor(hsv, hsv, CV_RGB2BGR);
-        //double lineFilterCoeffs[] = { -3, -3, -3, 1, 1, 1, 2, 7, 11, 21, 11, 7, 2, 1, 1, 1, -3, -3, -3};
-        double lineFilterCoeffs[] = {-1, -2, 0, 0, 0, 1, 1, 2, 1, 1, 0, 0, 0, -2, -1};
-        CvMat lineFilter;
-        cvInitMatHeader( &lineFilter, 15, 1, CV_64FC1, lineFilterCoeffs);
+        cvSplit(m_iplImage, NULL, NULL, gray, NULL);
 
-        cvFilter2D( m_iplImage ,hsv, &lineFilter, cvPoint(-1,-1));
+        //cvConvertScale(g,g,0.2);
+        //cvSub(gray, b, gray);
+        IplImage *grayF = cvCreateImage(cvSize(gray->width, gray->height), IPL_DEPTH_32F, 1);
 
-        //if ( (m_iMode & MODE_IMAGE_OUT) && (m_camWidget) ) {
+        cvConvertScale(gray,grayF,1.);
+        //cvSmooth(grayF,grayF, CV_GAUSSIAN, 3, 3);
+
+        grayF = evaluateImage(grayF);
+
+        cvConvertScale(grayF,gray);
+        IplImage* temp = cvCreateImage(cvSize(m_iplImage->width, m_iplImage->height), m_iplImage->depth, 3);
+        cvCvtColor(gray, temp, CV_GRAY2BGR);    //better send a (formally) color image to the camera widget
+
+
         if (m_camWidget) {
-            m_camWidget->setImage(hsv);
+            if (MODE_LIVE_PREPROCESSED == m_iLiveViewMode) {
+                m_camWidget->setImage(temp);
+            } else if (MODE_LIVE_CAMERA == m_iLiveViewMode) {
+                m_camWidget->setImage(m_iplImage);
+            //else do nothing (MODE_LIVE_NONE == m_iLiveViewMode)
+            }
         }
 
-        evaluateImage(hsv);
+
 
         //cvReleaseImage(&m_iplImage);  //this one is auto-cleared
-        cvReleaseImage(&hsv); //this one needs to be released explicitely --> or else we had a memleak
+        cvReleaseImage(&grayF);
+        cvReleaseImage(&gray);
+        cvReleaseImage(&temp); //this one needs to be released explicitely --> or else we had a memleak
+        //delete [] lineFilterCoeffs;
     }
     DEBUG(10,"Exiting thread.");
 }
+
+

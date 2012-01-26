@@ -2,7 +2,7 @@
 #define CENTERDIALOG_CPP
 
 #include "centerDialog.h"
-#include "ui_centerdialog.h"
+//#include "ui_centerdialog.h"
 #include <QtGui>
 #include "opencv2/calib3d/calib3d.hpp"
 #include "opencv2/highgui/highgui.hpp"
@@ -24,8 +24,24 @@ CenterDialog::CenterDialog(QWidget *parent) :
     ui->buttonCamera->setEnabled(false);
     connect(ui->buttonCamera, SIGNAL(clicked(bool)), this, SLOT(connectCamera(bool)));
     connect(ui->buttonCameraFind, SIGNAL(clicked()), this, SLOT(findCameras()));
+    connect(ui->comboLiveViewMode, SIGNAL(currentIndexChanged (QString)), this, SLOT(setLiveMode(QString)));
+    connect(ui->radioZoomFit, SIGNAL(clicked()), this, SLOT(setZoomMode()));
+    connect(ui->radioZoom100, SIGNAL(clicked()), this, SLOT(setZoomMode()));
+    connect(ui->cameraWidget, SIGNAL(tellMousePosition(int,int)), this, SLOT(displayCursorPosition(int,int)));
+    connect(ui->buttonClearCursor, SIGNAL(clicked()), ui->cameraWidget, SLOT(clearCursor()));
+    connect(ui->buttonRoiLine, SIGNAL(clicked()), ui->cameraWidget, SLOT(startSettingRoiLine()));
+    connect(ui->buttonRoiPoint, SIGNAL(clicked()), ui->cameraWidget, SLOT(startSettingRoiPoint()));
+    connect(ui->cameraWidget, SIGNAL(roiChangedPoint(QRect)), this, SLOT(displayRoiPointCoords(QRect)));
+    connect(ui->cameraWidget, SIGNAL(roiChangedLine(QRect)), this, SLOT(displayRoiLineCoords(QRect)));
+    //ui->scrollCameraWidget->setWidget(ui->cameraWidget);
 
+    //ui->cameraWidget->setAutoFillBackground(false);
+    //ui->cameraWidget->show();
+    //ui->scrollCameraWidget->setLayout(ui->layoutCameraWidget);
     findCameras();
+    connectCamera(true);
+    setZoomMode();
+    ui->buttonCamera->setChecked(true);
 }
 
 
@@ -114,7 +130,12 @@ void CenterDialog::connectCamera(bool connect)
             m_threadCam = new CameraThread(this);
             m_threadCam->setCameraWidget(ui->cameraWidget);
             m_threadCam->setCvCamera(m_iCamera, m_cvCapture);
+            setLiveMode(ui->comboLiveViewMode->currentText());
+            QTimer::singleShot(500, this,  SLOT(setZoomMode()));   //resize when camera thread is running; bad habit workaround
             m_threadCam->start();
+
+            this->connect(m_threadCam, SIGNAL(pointPosition(int,int)), this, SLOT(displayPointPosition(int,int)));
+
         } else {
             QMessageBox::critical(this,"Camera connect failed", "Could not get camera ID. Try rescanning for cameras.");
         }
@@ -139,12 +160,104 @@ void CenterDialog::connectCamera(bool connect)
     }
 }
 
+/**
+  @brief    slot to set live mode combo box
+  @param    combo box string content
 
+  Propagate setting
+  **/
+void CenterDialog::setLiveMode(const QString &mode)
+{
+    if(m_threadCam) {
+        if(0 == mode.compare("Preprocessed Image", Qt::CaseInsensitive)) {
+            m_threadCam->setLiveViewMode(MODE_LIVE_PREPROCESSED);
+        } else if (0 == mode.compare("Camera Image", Qt::CaseInsensitive)) {
+            m_threadCam->setLiveViewMode(MODE_LIVE_CAMERA);
+        } else {
+            m_threadCam->setLiveViewMode(MODE_LIVE_NONE);
+        }
+    }
+}
 
+/**
+  @brief    set zoom mode of camera widget
 
+  Reads user settings from gui
+  **/
+void CenterDialog::setZoomMode()
+{
+    if (ui->radioZoomFit->isChecked()) {
+        QRect geo = ui->scrollCameraWidget->geometry();
+        ui->scrollCameraWidget->setWidgetResizable(true);
+        geo.moveTo(0,0);
+        //ui->cameraWidget->setMinimumSize(geo.size());
+        ui->cameraWidget->setGeometry(geo);
+        ui->scrollCameraWidget->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+        ui->scrollCameraWidget->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    } else {
+        //DBG(QString("ScrollAreaWidget %1").arg((int) ui->scrollCameraWidget->widget()));
 
+        QRect geo = ui->scrollCameraWidget->geometry();
+        ui->scrollCameraWidget->setWidgetResizable(false);
 
+        geo.moveTo(0,0);
+        geo.setWidth( 1920 );
+        geo.setHeight( 1080 );
+        ui->cameraWidget->setGeometry(geo);
+        ui->cameraWidget->setMinimumSize(geo.size());
 
+        //ui->scrollCameraWidget->horizontalScrollBar()->setRange(0, 1920 - ui->scrollCameraWidget->geometry().width());
+        ui->scrollCameraWidget->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+        ui->scrollCameraWidget->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+        ui->scrollCameraWidget->viewport()->setGeometry(geo);
+        ui->scrollCameraWidget->viewport()->updateGeometry();
+        ui->scrollCameraWidget->viewport()->update();
+    }
+    update();
+}
+
+/**
+   @brief   display cursor position to gui
+   @param   x x position
+   @param   y y position
+  **/
+void CenterDialog::displayCursorPosition(int x, int y)
+{
+    if (x < 0 || y < 0) {
+        ui->labelCursorPos->setText("-, -");
+    } else  {
+        QString s = QString("%1, %2").arg(x).arg(y);
+        ui->labelCursorPos->setText(s);
+    }
+}
+
+/**
+  @brief    display laser line position
+  @param    x       x coordinate
+  @param    y       y coordinate
+  **/
+void CenterDialog::displayPointPosition(int x, int y)
+{
+    ui->labelLaserPoint->setText( QString("%1, %2").arg(x).arg(y) );
+}
+
+/**
+  @param        display coords within text label
+  @param    rect coords
+  **/
+void CenterDialog::displayRoiPointCoords(const QRect &rect)
+{
+    ui->labelRoiPoint->setText(QString("[%1, %2 ... %3, %4]").arg(rect.left()).arg(rect.top()).arg(rect.right()).arg(rect.bottom()));
+}
+
+/**
+  @param        display coords within text label
+  @param    rect coords
+  **/
+void CenterDialog::displayRoiLineCoords(const QRect &rect)
+{
+    ui->labelRoiLine->setText(QString("[%1, %2 ... %3, %4]").arg(rect.left()).arg(rect.top()).arg(rect.right()).arg(rect.bottom()));
+}
 
 
 #endif // CENTERDIALOG_CPP

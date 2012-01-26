@@ -15,13 +15,17 @@ CameraWidget::CameraWidget(QWidget *parent) :
     m_scaleX = 1.0;
     m_scaleY = 1.0;
 
+    m_cursorX = -1;
+    m_cursorY = -1;
+
+    m_iRoiSettingMode = ROI_TYPE_NONE;
 
     m_penPoint = QPen(QColor(0xff00ff00));
     m_penPoint.setStyle(Qt::DotLine);
     m_penLine = QPen(QColor(0xffff0000));
     m_penLine.setStyle(Qt::DotLine);
 
-    m_posPoint.setX(-1);    //make invalid
+    //m_posPoint.setX(-1);    //make invalid
 }
 
 /**
@@ -89,6 +93,23 @@ void CameraWidget::setImage(const IplImage *img)
 }
 
 /**
+  @brief    begin setting roi via mouse tracking
+  **/
+void CameraWidget::startSettingRoiPoint()
+{
+    m_iRoiSettingMode = ROI_TYPE_POINT;
+}
+
+
+/**
+  @brief    begin setting roi via mouse tracking
+  **/
+void CameraWidget::startSettingRoiLine()
+{
+    m_iRoiSettingMode = ROI_TYPE_LINE;
+}
+
+/**
   @brief    set coordinates of one of the rois (in image coords)
   @param    roi     roi coordinates
   @param    roitype type of roi to set {ROI_TYPE_POINT, ROI_TYPE_LINE}
@@ -127,9 +148,10 @@ QRect CameraWidget::roi(int roitype)
 
   pos with negative coordinates indicate not found
   **/
-void CameraWidget::tellLaserPos(QPointF &pos)
+void CameraWidget::tellLaserPos(int x, int y)
 {
-    m_posPoint = pos;
+    m_posPoint.setX(x);
+    m_posPoint.setY(y);
     update();
 }
 
@@ -144,16 +166,57 @@ void CameraWidget::tellLaserLine(float *line)
 }
 
 /**
+  @brief    give size hint
+
+  necessary for scroll bar
+  **/
+QSize CameraWidget::sizeHint()
+{
+    if (m_image.isNull())
+        return this->rect().size();
+    else
+        return m_image.size();
+}
+
+/**
+  @brief    externally enable cursor clearing
+  **/
+void CameraWidget::clearCursor()
+{
+    m_cursorX = -1;
+    m_cursorY = -1;
+
+    emit tellMousePosition( m_cursorX, m_cursorY );
+}
+
+/**
   @brief    things to be done when mouse key is pressed; e.g. tell position
   @param[in] event  recieved event
   **/
 void CameraWidget::mousePressEvent(QMouseEvent *event)
 {
-    //QWidget::mousePressEvent(event);
-    float px = float(event->x()) / m_scaleX;
-    float py = float(event->y()) / m_scaleY;
+    if (event->buttons() & Qt::LeftButton) {
+        //QWidget::mousePressEvent(event);
+        float px = float(event->x()) / m_scaleX;
+        float py = float(event->y()) / m_scaleY;
 
-    emit tellMousePosition( int(px+0.5), int(py+0.5));
+        if (m_iRoiSettingMode == ROI_TYPE_POINT) {  //we are in roi setting mode
+            m_roiPoint.setTopLeft(QPoint(int(px),int(py)));
+        }
+        else if (m_iRoiSettingMode == ROI_TYPE_LINE) {
+            m_roiLine.setTopLeft(QPoint(int(px),int(py)));
+        }
+
+        m_cursorX = int(px);
+        m_cursorY = int(py);
+
+    }
+    if (event->buttons() & Qt::RightButton) {   //right mouse button clears cursor
+        m_cursorX = -1;
+        m_cursorY = -1;
+    }
+
+    emit tellMousePosition( m_cursorX, m_cursorY );
 }
 
 /**
@@ -162,7 +225,20 @@ void CameraWidget::mousePressEvent(QMouseEvent *event)
   **/
 void CameraWidget::mouseReleaseEvent(QMouseEvent *event)
 {
-    //QWidget::mouseReleaseEvent(event);
+    if(event->button() & Qt::LeftButton) {
+        float px = float(event->x()) / m_scaleX;
+        float py = float(event->y()) / m_scaleY;
+
+        if (m_iRoiSettingMode == ROI_TYPE_POINT) {
+            m_roiPoint.setBottomRight(QPoint(int(px),int(py)));
+            emit roiChangedPoint(m_roiPoint);
+        }
+        else if (m_iRoiSettingMode == ROI_TYPE_LINE) {
+            m_roiLine.setBottomRight(QPoint(int(px),int(py)));
+            emit roiChangedLine(m_roiLine);
+        }
+        m_iRoiSettingMode = ROI_TYPE_NONE;
+    }
 }
 
 /**
@@ -172,10 +248,22 @@ void CameraWidget::mouseReleaseEvent(QMouseEvent *event)
 void CameraWidget::mouseMoveEvent(QMouseEvent *event)
 {
     //QWidget::mouseMoveEvent(event);
-    float px = event->x() / m_scaleX;
-    float py = event->y() / m_scaleY;
+    if (event->buttons() & Qt::LeftButton) {
+        float px = event->x() / m_scaleX;
+        float py = event->y() / m_scaleY;
 
-    emit tellMousePosition( int(px+0.5), int(py+0.5));
+        if (m_iRoiSettingMode == ROI_TYPE_POINT) {
+            m_roiPoint.setBottomRight(QPoint(int(px+0.5),int(py+0.5)));
+        }
+        else if (m_iRoiSettingMode == ROI_TYPE_LINE) {
+            m_roiLine.setBottomRight(QPoint(int(px+0.5),int(py+0.5)));
+        }
+
+        m_cursorX = int(px);
+        m_cursorY = int(py);
+
+        emit tellMousePosition( m_cursorX, m_cursorY );
+    }
 }
 
 /**
@@ -189,7 +277,7 @@ void CameraWidget::paintEvent(QPaintEvent *event)
 
         //draw image content first
 
-        DEBUG(10,QString("Draw %1 %2 %3 %4").arg(this->rect().left()).arg(this->rect().top()).arg(this->rect().right()).arg(this->rect().bottom()));
+        //DEBUG(10,QString("Draw %1 %2 %3 %4").arg(this->rect().left()).arg(this->rect().top()).arg(this->rect().right()).arg(this->rect().bottom()));
         painter.drawImage(this->rect(), m_image);
 
         //calculate current scale
@@ -214,6 +302,12 @@ void CameraWidget::paintEvent(QPaintEvent *event)
         painter.setPen(m_penLine);
         painter.drawRect(scaledRoiLine);
 
+        if (m_cursorX > 0 && m_cursorY > 0) {
+            painter.setPen(m_penLine);
+
+            painter.drawLine(this->rect().left(), m_cursorY*m_scaleY, this->rect().right(), m_cursorY*m_scaleY);
+            painter.drawLine(m_cursorX*m_scaleX, this->rect().top(), m_cursorX*m_scaleX, this->rect().bottom());
+        }
         //line: todo
     } else {    //no content
         DEBUG(10, "Empty m_image");

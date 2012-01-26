@@ -2,9 +2,10 @@
 #define CENTERDIALOG_H
 
 #include <QDialog>
+#include "ui_centerdialog.h"
+
 #include <opencv.hpp>
 #include "cameraThread.h"
-#include "ui_centerdialog.h"
 
 #define MAX_OPENCV_CAMERA 4 ///< maximum number of cameras to try detection
 
@@ -24,6 +25,12 @@ public:
 private slots:
     void findCameras(void);
     void connectCamera(bool connect);
+    void setLiveMode(const QString& mode);
+    void setZoomMode(void);
+    void displayCursorPosition(int x, int y);
+    void displayPointPosition(int x, int y);
+    void displayRoiPointCoords(const QRect& rect);
+    void displayRoiLineCoords(const QRect& rect);
 
 private:
     Ui::centerDialog *ui;
