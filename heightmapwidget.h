@@ -2,6 +2,7 @@
 #define HEIGHTMAPWIDGET_H
 
 #include <QWidget>
+#include <opencv.hpp>
 
 class HeightmapWidget : public QWidget
 {
@@ -12,7 +13,15 @@ public:
 signals:
     
 public slots:
-    
+    void setImage(const QImage &img);
+    void setImage(const IplImage *img);
+
+protected:
+    QImage  m_image;
+    double  m_scaleX;
+    double  m_scaleY;
+
+    virtual void paintEvent(QPaintEvent *event);
 };
 
 #endif // HEIGHTMAPWIDGET_H

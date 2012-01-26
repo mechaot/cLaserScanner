@@ -3,8 +3,12 @@
 #include "QtGui"
 #include "QtCore"
 
-typedef unsigned char UINT8;
-typedef unsigned int UINT32;
+#ifndef UINT8
+    typedef unsigned char UINT8;
+#endif
+#ifndef UINT32
+    typedef unsigned int UINT32;
+#endif
 
 CameraWidget::CameraWidget(QWidget *parent) :
     QWidget(parent)
