@@ -35,12 +35,14 @@ private:
 
     QPen    m_penPoint;
     QPen    m_penLine;
+    QPen    m_penCursor;
 
     int     m_iRoiSettingMode;
 signals:
     void tellMousePosition(int x, int y);
     void roiChangedPoint(const QRect&);
     void roiChangedLine(const QRect&);
+    void finishedSettingRoi(bool);  //emit signal we have finished the roi-setting (always false as parameter)
 
 public slots:
     void setImage(const QImage &img);
@@ -52,12 +54,14 @@ public slots:
 
     void startSettingRoiPoint();
     void startSettingRoiLine();
+    //void CameraWidget::setDataRow(int row, int count, float* data)
 
     virtual QSize sizeHint();
 
     void clearCursor();
     virtual void mousePressEvent(QMouseEvent *event);
     virtual void mouseReleaseEvent(QMouseEvent *event);
+
     virtual void mouseMoveEvent(QMouseEvent *event);
 
     virtual void paintEvent(QPaintEvent *event);

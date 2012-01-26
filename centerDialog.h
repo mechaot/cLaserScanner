@@ -32,6 +32,8 @@ private slots:
     void displayRoiPointCoords(const QRect& rect);
     void displayRoiLineCoords(const QRect& rect);
 
+    void digitize(bool);
+
 private:
     Ui::centerDialog *ui;
     int        m_iCamera;      ///< id of opencv camera

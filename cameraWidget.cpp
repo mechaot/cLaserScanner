@@ -28,9 +28,13 @@ CameraWidget::CameraWidget(QWidget *parent) :
     m_penPoint.setStyle(Qt::DotLine);
     m_penLine = QPen(QColor(0xffff0000));
     m_penLine.setStyle(Qt::DotLine);
+    m_penCursor = QPen(QColor(0xff00ffff));
+    m_penCursor.setStyle(Qt::DashDotLine);
 
-    //m_posPoint.setX(-1);    //make invalid
+    m_posPoint.setX(-1);    //make invalid
 }
+
+
 
 /**
   @brief    set whole content
@@ -236,10 +240,12 @@ void CameraWidget::mouseReleaseEvent(QMouseEvent *event)
         if (m_iRoiSettingMode == ROI_TYPE_POINT) {
             m_roiPoint.setBottomRight(QPoint(int(px),int(py)));
             emit roiChangedPoint(m_roiPoint);
+            emit finishedSettingRoi(false);
         }
         else if (m_iRoiSettingMode == ROI_TYPE_LINE) {
             m_roiLine.setBottomRight(QPoint(int(px),int(py)));
             emit roiChangedLine(m_roiLine);
+            emit finishedSettingRoi(false);
         }
         m_iRoiSettingMode = ROI_TYPE_NONE;
     }
@@ -275,6 +281,7 @@ void CameraWidget::mouseMoveEvent(QMouseEvent *event)
   **/
 void CameraWidget::paintEvent(QPaintEvent *event)
 {
+    Q_UNUSED(event);
     QPainter painter(this);
     if (!m_image.isNull()) {    //only print something if we have content
         //get painter
@@ -306,8 +313,9 @@ void CameraWidget::paintEvent(QPaintEvent *event)
         painter.setPen(m_penLine);
         painter.drawRect(scaledRoiLine);
 
+        //clicked cursor cross
         if (m_cursorX > 0 && m_cursorY > 0) {
-            painter.setPen(m_penLine);
+            painter.setPen(m_penCursor);
 
             painter.drawLine(this->rect().left(), m_cursorY*m_scaleY, this->rect().right(), m_cursorY*m_scaleY);
             painter.drawLine(m_cursorX*m_scaleX, this->rect().top(), m_cursorX*m_scaleX, this->rect().bottom());

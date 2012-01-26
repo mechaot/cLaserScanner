@@ -33,6 +33,9 @@ CenterDialog::CenterDialog(QWidget *parent) :
     connect(ui->buttonRoiPoint, SIGNAL(clicked()), ui->cameraWidget, SLOT(startSettingRoiPoint()));
     connect(ui->cameraWidget, SIGNAL(roiChangedPoint(QRect)), this, SLOT(displayRoiPointCoords(QRect)));
     connect(ui->cameraWidget, SIGNAL(roiChangedLine(QRect)), this, SLOT(displayRoiLineCoords(QRect)));
+    connect(ui->cameraWidget, SIGNAL(finishedSettingRoi(bool)), ui->buttonRoiLine, SLOT(setChecked(bool)));
+    connect(ui->cameraWidget, SIGNAL(finishedSettingRoi(bool)), ui->buttonRoiPoint, SLOT(setChecked(bool)));
+    connect(ui->buttonDigitize, SIGNAL(toggled(bool)), this, SLOT(digitize(bool)));
     //ui->scrollCameraWidget->setWidget(ui->cameraWidget);
 
     //ui->cameraWidget->setAutoFillBackground(false);
@@ -242,7 +245,7 @@ void CenterDialog::displayPointPosition(int x, int y)
 }
 
 /**
-  @param        display coords within text label
+  @brief        display coords within text label
   @param    rect coords
   **/
 void CenterDialog::displayRoiPointCoords(const QRect &rect)
@@ -251,7 +254,7 @@ void CenterDialog::displayRoiPointCoords(const QRect &rect)
 }
 
 /**
-  @param        display coords within text label
+  @brief display coords within text label
   @param    rect coords
   **/
 void CenterDialog::displayRoiLineCoords(const QRect &rect)
@@ -259,5 +262,15 @@ void CenterDialog::displayRoiLineCoords(const QRect &rect)
     ui->labelRoiLine->setText(QString("[%1, %2 ... %3, %4]").arg(rect.left()).arg(rect.top()).arg(rect.right()).arg(rect.bottom()));
 }
 
+/**
+  @brief    start/stop digitizing 3D
+  @param    digi    true: start; false: stop
+  **/
+void CenterDialog::digitize(bool digi)
+{
+    ui->buttonRoiLine->setDisabled(digi);
+    ui->buttonRoiPoint->setDisabled(digi);
+
+}
 
 #endif // CENTERDIALOG_CPP

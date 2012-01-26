@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1114</width>
+    <width>1252</width>
     <height>789</height>
    </rect>
   </property>
@@ -18,13 +18,13 @@
     <rect>
      <x>56</x>
      <y>20</y>
-     <width>947</width>
-     <height>547</height>
+     <width>1150</width>
+     <height>621</height>
     </rect>
    </property>
    <layout class="QHBoxLayout" name="pageLayout" stretch="2,1">
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,0,0,0,0,0,0,0">
+     <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,0,0,0,0,0,0">
       <item>
        <layout class="QVBoxLayout" name="layoutDockCamera">
         <item>
@@ -218,8 +218,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>451</width>
-           <height>310</height>
+           <width>545</width>
+           <height>390</height>
           </rect>
          </property>
          <widget class="CameraWidget" name="cameraWidget" native="true">
@@ -248,6 +248,9 @@
           <property name="text">
            <string>Set ROI point</string>
           </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
          </widget>
         </item>
         <item>
@@ -268,6 +271,9 @@
          <widget class="QPushButton" name="buttonRoiLine">
           <property name="text">
            <string>Set ROI line</string>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
@@ -343,75 +349,6 @@
           </property>
           <property name="alignment">
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="1,0,0,0,0">
-        <item>
-         <widget class="QLabel" name="label_6">
-          <property name="styleSheet">
-           <string notr="true">font: 75 12pt;</string>
-          </property>
-          <property name="text">
-           <string>Digitize from</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QDoubleSpinBox" name="doubleSpinBox">
-          <property name="styleSheet">
-           <string notr="true">font: 75 12pt;</string>
-          </property>
-          <property name="suffix">
-           <string/>
-          </property>
-          <property name="decimals">
-           <number>1</number>
-          </property>
-          <property name="maximum">
-           <double>200.000000000000000</double>
-          </property>
-          <property name="value">
-           <double>5.000000000000000</double>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="label_7">
-          <property name="styleSheet">
-           <string notr="true">font: 75 12pt;</string>
-          </property>
-          <property name="text">
-           <string>to</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QDoubleSpinBox" name="doubleSpinBox_2">
-          <property name="styleSheet">
-           <string notr="true">font: 75 12pt;</string>
-          </property>
-          <property name="decimals">
-           <number>1</number>
-          </property>
-          <property name="maximum">
-           <double>200.000000000000000</double>
-          </property>
-          <property name="value">
-           <double>120.000000000000000</double>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="pushButton_4">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="text">
-           <string>Start</string>
           </property>
          </widget>
         </item>

@@ -24,13 +24,14 @@ class CameraThread : public QThread
     Q_OBJECT
 public:
     explicit CameraThread(QObject *parent = 0);
-    
+    virtual ~CameraThread();
+
 protected:
     void run();
 
 signals:
     void pointPosition(int x, int y);
-    void linePosition( QVector<float> &v);
+    void linePosition( QVector<QPointF> &v);
     
 public slots:
     void sendTerminationRequest();
@@ -40,6 +41,7 @@ public slots:
     void setRoi(const QRect &roi, int roitype);
     void setRoiPoint(const QRect &roi);
     void setRoiLine(const QRect &roi);
+    void digitize(bool digi);
 
 private:
     int            captureFrame();
@@ -54,11 +56,15 @@ private:
     int            m_iLiveViewMode;         ///< live view mode: what is to be sent to the widget
     CvCapture*     m_cvCapture;             ///< pointer to capture device struct
     CameraWidget*  m_camWidget;             ///< pointer to displaying widget
-    IplImage*      m_iplImage;              ///< image as from opencv
-    //Matrix<double> m_matPoint;              ///< found laser point position
-    QRect          m_roiLine;
-    QRect          m_roiPoint;
+    IplImage*      m_iplImage;              ///< image from opencv camera
+    QRect          m_roiLine;               ///< region of interest for line detection
+    QRect          m_roiPoint;              ///< region of interest for point detection
 
+
+    QPoint         m_posPoint;              ///< found laser point position
+    IplImage*      m_profileData;
+
+    bool           m_bDigitizing;           ///< state: are we digitizing for 3D?
 };
 
 #endif // CAMERATHREAD_H

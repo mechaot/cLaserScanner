@@ -36,7 +36,7 @@ win32 {
 }
 
 unix {
-
+    QMAKE_CXXFLAGS += -fopenmp
     LIBS += -L/usr/local/lib -lopencv_highgui -lopencv_core -lopencv_imgproc -Lomp -lgomp
 }
 
