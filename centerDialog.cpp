@@ -38,6 +38,7 @@ CenterDialog::CenterDialog(QWidget *parent) :
     connect(ui->cameraWidget, SIGNAL(finishedSettingRoi(bool)), ui->buttonRoiPoint, SLOT(setChecked(bool)));
     connect(ui->buttonDigitize, SIGNAL(toggled(bool)), this, SLOT(digitize(bool)));
     connect(ui->buttonCalibrateRt, SIGNAL(clicked()), this, SLOT(calibrateExternalParameters()));
+
     //ui->scrollCameraWidget->setWidget(ui->cameraWidget);
 
     //ui->cameraWidget->setAutoFillBackground(false);
@@ -61,7 +62,7 @@ CenterDialog::~CenterDialog()
         connectCamera(false);
         delete ui;
     } catch(std::exception e) {
-        DEBUG(1,"App Closing caused exception. Catch and shut up!");
+        DEBUG(1,QString("App Closing caused exception (%1). Catch and shut up!").arg(e.what()));
     }
 }
 
@@ -146,7 +147,7 @@ void CenterDialog::connectCamera(bool connect)
             m_threadCam->start();
 
             this->connect(m_threadCam, SIGNAL(pointPosition(int,int)), this, SLOT(displayPointPosition(int,int)));
-
+            this->connect(m_threadCam, SIGNAL(newScanData()), this, SLOT(updateHeightmapWidget()));
         } else {
             QMessageBox::critical(this,"Camera connect failed", "Could not get camera ID. Try rescanning for cameras.");
         }
@@ -207,6 +208,16 @@ void CenterDialog::calibrateExternalParameters()
     }
 }
 
+/**
+  @brief tell the heightmap widget to reload its content from image processing thread
+
+  **/
+void CenterDialog::updateHeightmapWidget()
+{
+    if (m_threadCam) {
+        ui->heightmapWidget->setImage(m_threadCam->m_scanData);
+    }
+}
 
 /**
   @brief    set zoom mode of camera widget
@@ -296,7 +307,8 @@ void CenterDialog::digitize(bool digi)
 {
     ui->buttonRoiLine->setDisabled(digi);
     ui->buttonRoiPoint->setDisabled(digi);
-
+    if (m_threadCam)
+        m_threadCam->digitize(digi);
 }
 
 

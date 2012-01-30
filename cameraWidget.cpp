@@ -74,7 +74,6 @@ void CameraWidget::setImage(const IplImage *img)
                   pixval = *((UINT8*) (img->imageData + y*img->widthStep + x));
                   pixval = 0xff000000 | (pixval << 16) | (pixval << 8) | pixval;
                   //*((UINT32*)  (pDstBase + (x * sizeof(UINT32)))) = pixval;
-
               }
               pDstBase += lineWidthDst;
           }
@@ -210,13 +209,17 @@ void CameraWidget::mousePressEvent(QMouseEvent *event)
 
         if (m_iRoiSettingMode == ROI_TYPE_POINT) {  //we are in roi setting mode
             m_roiPoint.setTopLeft(QPoint(int(px),int(py)));
+            m_cursorX = -1; //no cursor while setting roi
+            m_cursorY = -1;
         }
         else if (m_iRoiSettingMode == ROI_TYPE_LINE) {
             m_roiLine.setTopLeft(QPoint(int(px),int(py)));
+            m_cursorX = -1;
+            m_cursorY = -1;
+        } else {
+            m_cursorX = int(px);
+            m_cursorY = int(py);
         }
-
-        m_cursorX = int(px);
-        m_cursorY = int(py);
 
     }
     if (event->buttons() & Qt::RightButton) {   //right mouse button clears cursor
@@ -239,11 +242,13 @@ void CameraWidget::mouseReleaseEvent(QMouseEvent *event)
 
         if (m_iRoiSettingMode == ROI_TYPE_POINT) {
             m_roiPoint.setBottomRight(QPoint(int(px),int(py)));
+            m_roiPoint = m_roiPoint.normalized();
             emit roiChangedPoint(m_roiPoint);
             emit finishedSettingRoi(false);
         }
         else if (m_iRoiSettingMode == ROI_TYPE_LINE) {
             m_roiLine.setBottomRight(QPoint(int(px),int(py)));
+            m_roiLine = m_roiLine.normalized();
             emit roiChangedLine(m_roiLine);
             emit finishedSettingRoi(false);
         }
@@ -264,14 +269,17 @@ void CameraWidget::mouseMoveEvent(QMouseEvent *event)
 
         if (m_iRoiSettingMode == ROI_TYPE_POINT) {
             m_roiPoint.setBottomRight(QPoint(int(px+0.5),int(py+0.5)));
+            m_cursorX = -1;
+            m_cursorY = -1;
         }
         else if (m_iRoiSettingMode == ROI_TYPE_LINE) {
             m_roiLine.setBottomRight(QPoint(int(px+0.5),int(py+0.5)));
+            m_cursorX = -1;
+            m_cursorY = -1;
+        } else {
+            m_cursorX = int(px);
+            m_cursorY = int(py);
         }
-
-        m_cursorX = int(px);
-        m_cursorY = int(py);
-
         emit tellMousePosition( m_cursorX, m_cursorY );
     }
 }
@@ -297,7 +305,7 @@ void CameraWidget::paintEvent(QPaintEvent *event)
 
         // roi for point
         QRect scaledRoiPoint(m_roiPoint.x() * m_scaleX, m_roiPoint.y() * m_scaleY,
-                              m_roiPoint.width() * m_scaleX, m_roiPoint.height() * m_scaleY);
+                             m_roiPoint.width() * m_scaleX, m_roiPoint.height() * m_scaleY);
         painter.setPen(m_penPoint);
         painter.drawRect(scaledRoiPoint);
 

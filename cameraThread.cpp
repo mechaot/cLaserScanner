@@ -19,8 +19,19 @@ CameraThread::CameraThread(QObject *parent) :
     m_iplImage = NULL;
     m_iLiveViewMode = MODE_LIVE_PREPROCESSED;
     m_posPoint.setX(-1); m_posPoint.setY(-1);
-    m_profileData = NULL;
     m_bDigitizing = false;
+
+    //channel 0: position of the maximum found (cvSplit to display this only)
+    //channel 1: energy of the maximum found (0 for "copies"; i.e. we triple lines to fill spaces)
+    //channel 2: zero
+    //note: size is transposed with respect to camera resolution because laser scanner is vertical
+    m_scanData = cvCreateImage( cvSize(CAMERA_RESOLUTION_Y, CAMERA_RESOLUTION_X), IPL_DEPTH_64F, 3 );
+
+    cvZero(m_scanData);
+
+    //load config file for calibration filenames
+    loadInternalCalibration("internal.xml");
+    loadExternalCalibration("external.xml");
 }
 
 /**
@@ -43,17 +54,49 @@ void CameraThread::sendTerminationRequest()
 }
 
 /**
+  @brief    note the telling name ;)
+  @param    filename to load parameters from
+  **/
+void CameraThread::loadInternalCalibration(const QString& fileName)
+{
+    //m_camIntrinsics = cvLoad()
+}
+
+/**
+  @brief    note the telling name ;)
+  @param    filename to load parameters from
+  **/
+void CameraThread::loadExternalCalibration(const QString& fileName)
+{
+
+}
+
+/**
+  @brief    note the telling name ;)
+  @param    filename to save parameters to
+  **/
+void CameraThread::saveInternalCalibration(const QString& fileName)
+{
+
+}
+
+/**
+  @brief    note the telling name ;)
+  @param    filename to save parameters to
+  **/
+void CameraThread::saveExternalCalibration(const QString& fileName)
+{
+
+}
+
+
+/**
   @brief    tell us if we shall digitize
   @parm     digi    do or not to do
   **/
 void CameraThread::digitize(bool digi)
 {
     m_bDigitizing = digi;
-    if (digi) {
-        if (m_profileData) {
-
-        }
-    }
 }
 
 /**
@@ -211,30 +254,57 @@ IplImage *CameraThread::evaluateImage(IplImage *img)
         //cvFilter2D( lineImage ,lineImage, &lineFilter, cvPoint(-1,-1));
         //cvSmooth(grayF,grayF, CV_GAUSSIAN, 15, 1);
 
-        float *points = (float*) new float[lRect.height];
-        for(int i = 0; i < lRect.height; i++)
-            points[i] = -1;
-
         float maxval;
         int   xpos;
-        DEBUG(1, QString("Sizeof(float): %1").arg(sizeof(float)));
 
         for(int y = 0; y < lRect.height; y++) { //for every row search max
             float *data = (float*) (lineImage->imageData + y * lineImage->widthStep);
             maxval = *data;
             xpos = 0;
-            for(int x = 1; x < lRect.width; x++)             {
+            for(int x = 1; x < lRect.width; x++) {
                 ++data;
                 if (*data > maxval) {
                     maxval = *data;
                     xpos = x;
                 }
             }
-            if (maxval > 10) {  //if there has been a max over threshold
-                cvDrawCircle(img, cvPoint(xpos,y), 1, cvScalar(0xff), 1);
+            cvDrawCircle(img, cvPoint(xpos /*+ lRect.x*/,y+lRect.y), 2, cvScalar(0xaf), 1);
+
+            if (m_posPoint.x() >= 0 && m_posPoint.x() < m_scanData->height && xpos >= 0 && xpos < m_scanData->width) {
+                if(m_bDigitizing) {
+                    double *data = (double*) (m_scanData->imageData + m_posPoint.x()*m_scanData->widthStep + img->nChannels*(y+lRect.height)*sizeof(double)); //
+                    //if (maxval >= *(data+1)) {   //if stronger/better than old value; then overwrite it
+                        *data =  xpos ; //todo: make it different from that
+                        *(data+1) =  maxval;
+                    //}
+                    /*
+                    //also do the line above, if applicable
+                    data = (double*) (m_scanData->imageData + (m_posPoint.x()-1)*m_scanData->widthStep + y*sizeof(double)); //
+                    if (m_posPoint.x() >= 1) { //if line above exists
+                        if(*(data+1) != 0.0) {   //if line above is unset
+                            *data = xpos;
+                            *(data+1) = maxval;
+                        }
+                    }
+                    //also do the line below if applicable
+                    data = (double*) (m_scanData->imageData + (m_posPoint.x()+1)*m_scanData->widthStep + y*sizeof(double)); //
+                    if ((m_posPoint.x()+1) <  m_scanData->height) { //if line below exists
+                        if(*(data+1) != 0.0) {   //if line below is unset
+                            *data = xpos;
+                            *(data+1) = maxval;
+                        }
+                    }
+                    */
+                }
+                //*(data+2) = 0;
+
                 //points.append( QPointF(xpos,y) );
             }
         }
+        if (m_bDigitizing) {
+            emit newScanData();
+        }
+
         cvReleaseImage( &temp );
         cvReleaseImage( &lineImage);
 
@@ -301,19 +371,19 @@ void CameraThread::run()
             grayF = evaluateImage(grayF);
 
             cvConvertScale(grayF,gray);
-            IplImage* temp = cvCreateImage(cvSize(m_iplImage->width, m_iplImage->height), m_iplImage->depth, 3);
-            cvCvtColor(gray, temp, CV_GRAY2BGR);    //better send a (formally) color image to the camera widget
 
             if (m_camWidget) {
                 if (MODE_LIVE_PREPROCESSED == m_iLiveViewMode) {
+                    IplImage* temp = cvCreateImage(cvSize(m_iplImage->width, m_iplImage->height), m_iplImage->depth, 3);
+                    cvCvtColor(gray, temp, CV_GRAY2BGR);    //better send a (formally) color image to the camera widget
                     m_camWidget->setImage(temp);
+                    cvReleaseImage(&temp);
                 } else if (MODE_LIVE_CAMERA == m_iLiveViewMode) {
                     m_camWidget->setImage(m_iplImage);
                 //else do nothing (MODE_LIVE_NONE == m_iLiveViewMode)
                 }
             }
             cvReleaseImage(&grayF);
-            cvReleaseImage(&temp); //this one needs to be released explicitely --> or else we had a memleak
         }
 
         //cvReleaseImage(&m_iplImage);  //this one is auto-cleared

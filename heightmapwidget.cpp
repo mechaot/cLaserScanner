@@ -41,7 +41,7 @@ void HeightmapWidget::setImage(const IplImage *img)
       }
       if ( (img->height != m_image.height()) || (img->width != m_image.width()) ) {	//check for image sizes
           m_image = QImage(img->width, img->height, QImage::Format_RGB32);
-          m_image.fill( 0xff00ffff);
+          m_image.fill( 0x000000ff);
           DEBUG(10, QString("Created m_image (%1x%2)").arg(m_image.width()).arg(m_image.height()));
       }
 
@@ -49,9 +49,8 @@ void HeightmapWidget::setImage(const IplImage *img)
       int	lineWidthDst = m_image.bytesPerLine();
 
       if ((img->nChannels == 1) && (img->depth == IPL_DEPTH_8U)){
+          //DEBUG(1,"Convert color image 8u1");
           UINT32 pixval;
-
-
           for(int y=0; y < img->height; y++) {
               for(int x=0; x < img->width; x++) {
                   pixval = *((UINT8*) (img->imageData + y*img->widthStep + x));
@@ -62,7 +61,7 @@ void HeightmapWidget::setImage(const IplImage *img)
               pDstBase += lineWidthDst;
           }
       } else if ((img->nChannels == 3) && (img->depth == IPL_DEPTH_8U)) {
-          //DEBUG(50,"Convert color image");
+          //DEBUG(1,"Convert color image 8u3");
           UINT32 pixval;
           char* pix;
 
@@ -73,6 +72,33 @@ void HeightmapWidget::setImage(const IplImage *img)
               for(int x=0; x < img->width; x++) {
                   pix = img->imageData + y*img->widthStep + x*img->nChannels;
                   pixval = 0xFF000000 | (((*(pix+2)) & 0xff)<< 16) | (((*(pix+1)) & 0xff) << 8) | ((*pix) & 0xff);
+                  *(pDstBase + x) = pixval;
+              }
+          }
+      } else if ((img->nChannels == 3) && (img->depth == IPL_DEPTH_64F)) {
+          //DEBUG(1,QString("Convert color image 64F3 (%1, %2)").arg(img->width).arg(img->height));
+          UINT8 r;
+          UINT8 g;
+          UINT8 b;
+
+          UINT32 pixval;
+          char* pix;
+          double* pix_d;
+
+          int y;
+          /* //#pragma omp parallel for private(y,pixval,pix,pDstBase) */
+          for(y=0; y < img->height; y++) {
+              pDstBase = (UINT32*) m_image.scanLine(y);
+              for(int x=0; x < img->width; x++) {
+                  pix = img->imageData + y*img->widthStep + x*img->nChannels * sizeof(double);
+                  pix_d = (double*) pix;
+                  r = (UINT8) *(pix_d+0);
+                  g = (UINT8) *(pix_d+1);
+                  b = (UINT8) *(pix_d+2);
+
+                  pixval = 0x00000000 | (((UINT32)(r)) << 16) | (((UINT32)(g)) << 8) | r;
+                  //if (pixval != 0xff000000)  DEBUG(1,QString::number(pixval,16));
+                  //pixval = x*y;
                   *(pDstBase + x) = pixval;
               }
           }
@@ -89,6 +115,7 @@ void HeightmapWidget::setImage(const IplImage *img)
 void HeightmapWidget::paintEvent(QPaintEvent *event)
 {
     QPainter painter(this);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform);
     if (!m_image.isNull()) {    //only print something if we have content
         //get painter
 

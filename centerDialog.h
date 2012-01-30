@@ -32,6 +32,7 @@ private slots:
     void displayRoiPointCoords(const QRect& rect);
     void displayRoiLineCoords(const QRect& rect);
     void calibrateExternalParameters();
+    void updateHeightmapWidget();
 
     void digitize(bool);
 
@@ -39,7 +40,7 @@ private:
     Ui::centerDialog *ui;
     int        m_iCamera;      ///< id of opencv camera
     CvCapture *m_cvCapture;
-
+public:
     CameraThread *m_threadCam;
 };
 

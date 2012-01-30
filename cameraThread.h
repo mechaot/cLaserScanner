@@ -11,11 +11,11 @@
 #define MODE_POINT      2       ///< mode: do look for point within pointroi
 #define MODE_LINE       4       ///< mode: do look for laser line within lineroi
 
-#define MODE_LIVE_NONE         0
-#define MODE_LIVE_CAMERA       1
-#define MODE_LIVE_PREPROCESSED 2
-#define MODE_LIVE_CHESSBOARD   3
-#define MODE_LIVE_CHESSBOARD_SAVE   3       ///< save current frame data
+#define MODE_LIVE_NONE              0
+#define MODE_LIVE_CAMERA            1
+#define MODE_LIVE_PREPROCESSED      2
+#define MODE_LIVE_CHESSBOARD        3
+#define MODE_LIVE_CHESSBOARD_SAVE   4       ///< save current frame data
 
 
 /**
@@ -33,7 +33,7 @@ protected:
 
 signals:
     void pointPosition(int x, int y);
-    void linePosition( QVector<QPointF> &v);
+    void newScanData();
     
 public slots:
     void sendTerminationRequest();
@@ -44,6 +44,10 @@ public slots:
     void setRoiPoint(const QRect &roi);
     void setRoiLine(const QRect &roi);
     void digitize(bool digi);
+    void loadInternalCalibration(const QString& fileName);
+    void loadExternalCalibration(const QString& fileName);
+    void saveInternalCalibration(const QString& fileName);
+    void saveExternalCalibration(const QString& fileName);
 
 private:
     int            captureFrame();
@@ -64,12 +68,14 @@ private:
 
 
     QPoint         m_posPoint;              ///< found laser point position
-    IplImage*      m_profileData;
 
-    cv::Mat        m_CamIntrinsics;         ///< camera intrinsic parameters
-    cv::Mat        m_CamExtrinsics;         ///< camera extrinsic matrix
+    cv::Mat        m_camIntrinsics;         ///< camera intrinsic parameters
+    cv::Mat        m_camExtrinsics;         ///< camera extrinsic matrix
 
     bool           m_bDigitizing;           ///< state: are we digitizing for 3D?
+public:
+    IplImage*      m_scanData;              ///< scanned data
+
 };
 
 #endif // CAMERATHREAD_H
