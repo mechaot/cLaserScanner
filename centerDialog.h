@@ -31,6 +31,7 @@ private slots:
     void displayPointPosition(int x, int y);
     void displayRoiPointCoords(const QRect& rect);
     void displayRoiLineCoords(const QRect& rect);
+    void calibrateExternalParameters();
 
     void digitize(bool);
 

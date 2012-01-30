@@ -2,6 +2,7 @@
 #include "QtException.h"
 #include <opencv.hpp>
 #include <QTime>
+#include "settings.h"
 
 #define USE_OPENMP      1       ///< use openmp multiprocessin library to speed up things
 
@@ -49,7 +50,9 @@ void CameraThread::digitize(bool digi)
 {
     m_bDigitizing = digi;
     if (digi) {
-        if (m_profileData)
+        if (m_profileData) {
+
+        }
     }
 }
 
@@ -153,7 +156,6 @@ void CameraThread::setRoi(const QRect &roi, int roitype)
     //}
 }
 
-
 /**
   @brief    heart 1 of the laser scanner: extract point and line
   @param    img     image to process
@@ -229,7 +231,7 @@ IplImage *CameraThread::evaluateImage(IplImage *img)
                 }
             }
             if (maxval > 10) {  //if there has been a max over threshold
-                cvDrawCircle(img, cvPoint(xpos,y), 2, cvScalar(0xff), 1);
+                cvDrawCircle(img, cvPoint(xpos,y), 1, cvScalar(0xff), 1);
                 //points.append( QPointF(xpos,y) );
             }
         }
@@ -263,34 +265,60 @@ void CameraThread::run()
 
         IplImage* gray = cvCreateImage(cvSize(m_iplImage->width, m_iplImage->height), m_iplImage->depth, 1);
 
-        cvSplit(m_iplImage, NULL, NULL, gray, NULL);
 
         //cvConvertScale(g,g,0.2);
         //cvSub(gray, b, gray);
-        IplImage *grayF = cvCreateImage(cvSize(gray->width, gray->height), IPL_DEPTH_32F, 1);
 
-        cvConvertScale(gray,grayF,1.);
         //cvSmooth(grayF,grayF, CV_GAUSSIAN, 3, 3);
 
-        grayF = evaluateImage(grayF);
+        if ((m_iLiveViewMode == MODE_LIVE_CHESSBOARD) || (m_iLiveViewMode == MODE_LIVE_CHESSBOARD_SAVE)) {
+            int corner_count;
+            CvPoint2D32f* corners = new CvPoint2D32f[ CALIBRATION_CHESSBOARD_WIDTH *  CALIBRATION_CHESSBOARD_HEIGHT];
+            int found = cvFindChessboardCorners(m_iplImage, cvSize(CALIBRATION_CHESSBOARD_WIDTH, CALIBRATION_CHESSBOARD_HEIGHT), corners, &corner_count);
+            if (found) {
+                // Get subpixel accuracy on those corners
+                cvCvtColor( m_iplImage, gray, CV_BGR2GRAY );
+                cvFindCornerSubPix( gray, corners, corner_count, cvSize( 5, 5 ),
+                    cvSize( -1, -1 ), cvTermCriteria( CV_TERMCRIT_EPS+CV_TERMCRIT_ITER, 30, 0.1 ));
 
-        cvConvertScale(grayF,gray);
-        IplImage* temp = cvCreateImage(cvSize(m_iplImage->width, m_iplImage->height), m_iplImage->depth, 3);
-        cvCvtColor(gray, temp, CV_GRAY2BGR);    //better send a (formally) color image to the camera widget
 
-        if (m_camWidget) {
-            if (MODE_LIVE_PREPROCESSED == m_iLiveViewMode) {
-                m_camWidget->setImage(temp);
-            } else if (MODE_LIVE_CAMERA == m_iLiveViewMode) {
-                m_camWidget->setImage(m_iplImage);
-            //else do nothing (MODE_LIVE_NONE == m_iLiveViewMode)
+                if (m_iLiveViewMode == MODE_LIVE_CHESSBOARD_SAVE) { //save request; save it and go to normal mode
+                    //cvSave( "Chessbaord.xml", external_matrix);
+                    DEBUG(1, "External Calibration Saved");
+                    m_iLiveViewMode = MODE_LIVE_CHESSBOARD;
+                }
             }
+
+            // Draw it
+            cvDrawChessboardCorners( m_iplImage, cvSize(CALIBRATION_CHESSBOARD_WIDTH, CALIBRATION_CHESSBOARD_HEIGHT), corners, corner_count, found );
+            delete [] corners;
+
+            m_camWidget->setImage(m_iplImage);
+        } else {
+            cvSplit(m_iplImage, NULL, NULL, gray, NULL);
+            IplImage *grayF = cvCreateImage(cvSize(gray->width, gray->height), IPL_DEPTH_32F, 1);
+            cvConvertScale(gray,grayF,1.);
+            grayF = evaluateImage(grayF);
+
+            cvConvertScale(grayF,gray);
+            IplImage* temp = cvCreateImage(cvSize(m_iplImage->width, m_iplImage->height), m_iplImage->depth, 3);
+            cvCvtColor(gray, temp, CV_GRAY2BGR);    //better send a (formally) color image to the camera widget
+
+            if (m_camWidget) {
+                if (MODE_LIVE_PREPROCESSED == m_iLiveViewMode) {
+                    m_camWidget->setImage(temp);
+                } else if (MODE_LIVE_CAMERA == m_iLiveViewMode) {
+                    m_camWidget->setImage(m_iplImage);
+                //else do nothing (MODE_LIVE_NONE == m_iLiveViewMode)
+                }
+            }
+            cvReleaseImage(&grayF);
+            cvReleaseImage(&temp); //this one needs to be released explicitely --> or else we had a memleak
         }
 
         //cvReleaseImage(&m_iplImage);  //this one is auto-cleared
-        cvReleaseImage(&grayF);
         cvReleaseImage(&gray);
-        cvReleaseImage(&temp); //this one needs to be released explicitely --> or else we had a memleak
+
         //delete [] lineFilterCoeffs;
     }
     DEBUG(10,"Exiting thread.");

@@ -28,7 +28,7 @@
       <item>
        <layout class="QVBoxLayout" name="layoutDockCamera">
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,0,0,0">
+         <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,0,0">
           <item>
            <widget class="QComboBox" name="comboCameras"/>
           </item>
@@ -46,16 +46,6 @@
            <widget class="QPushButton" name="buttonCameraFind">
             <property name="text">
              <string>Find Cameras</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="buttonCalibrateRt">
-            <property name="enabled">
-             <bool>true</bool>
-            </property>
-            <property name="text">
-             <string>Calibrate Rt</string>
             </property>
            </widget>
           </item>
@@ -133,7 +123,7 @@
        </layout>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="0,0,0,0,0,0">
+       <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="0,0,0,0,0,0,0">
         <item>
          <widget class="QLabel" name="label_3">
           <property name="text">
@@ -146,6 +136,11 @@
           <item>
            <property name="text">
             <string>Preprocessed Image</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Chessboard Detection</string>
            </property>
           </item>
           <item>
@@ -200,6 +195,16 @@
           </property>
          </spacer>
         </item>
+        <item>
+         <widget class="QPushButton" name="buttonCalibrateRt">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="text">
+           <string>Calibrate Rt</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </item>
       <item>
@@ -218,8 +223,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>545</width>
-           <height>390</height>
+           <width>654</width>
+           <height>414</height>
           </rect>
          </property>
          <widget class="CameraWidget" name="cameraWidget" native="true">

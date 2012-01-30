@@ -8,6 +8,7 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "QtException.h"
+#include "settings.h"
 
 using namespace cv;
 
@@ -36,6 +37,7 @@ CenterDialog::CenterDialog(QWidget *parent) :
     connect(ui->cameraWidget, SIGNAL(finishedSettingRoi(bool)), ui->buttonRoiLine, SLOT(setChecked(bool)));
     connect(ui->cameraWidget, SIGNAL(finishedSettingRoi(bool)), ui->buttonRoiPoint, SLOT(setChecked(bool)));
     connect(ui->buttonDigitize, SIGNAL(toggled(bool)), this, SLOT(digitize(bool)));
+    connect(ui->buttonCalibrateRt, SIGNAL(clicked()), this, SLOT(calibrateExternalParameters()));
     //ui->scrollCameraWidget->setWidget(ui->cameraWidget);
 
     //ui->cameraWidget->setAutoFillBackground(false);
@@ -50,11 +52,17 @@ CenterDialog::CenterDialog(QWidget *parent) :
 
 /**
   @brief    destructur  clean up
+
+  We are evil ;-) and catch any exception without interaction; --> just make the app to shut up
   **/
 CenterDialog::~CenterDialog()
 {
-    connectCamera(false);
-    delete ui;
+    try {
+        connectCamera(false);
+        delete ui;
+    } catch(std::exception e) {
+        DEBUG(1,"App Closing caused exception. Catch and shut up!");
+    }
 }
 
 /**
@@ -105,8 +113,8 @@ void CenterDialog::connectCamera(bool connect)
             //m_cvCapture = cvCreateCameraCapture(-1);
             m_cvCapture = cvCreateCameraCapture(camIdx);
 
-            cvSetCaptureProperty(m_cvCapture, CV_CAP_PROP_FRAME_WIDTH, 1920);
-            cvSetCaptureProperty(m_cvCapture, CV_CAP_PROP_FRAME_HEIGHT, 1080);
+            cvSetCaptureProperty(m_cvCapture, CV_CAP_PROP_FRAME_WIDTH, CAMERA_RESOLUTION_X);
+            cvSetCaptureProperty(m_cvCapture, CV_CAP_PROP_FRAME_HEIGHT, CAMERA_RESOLUTION_Y);
 
             double w = cvGetCaptureProperty(m_cvCapture, CV_CAP_PROP_FRAME_WIDTH);
             double h = cvGetCaptureProperty(m_cvCapture, CV_CAP_PROP_FRAME_HEIGHT);
@@ -172,15 +180,33 @@ void CenterDialog::connectCamera(bool connect)
 void CenterDialog::setLiveMode(const QString &mode)
 {
     if(m_threadCam) {
+        ui->buttonCalibrateRt->setEnabled(false); //only enable for chessboard mode
         if(0 == mode.compare("Preprocessed Image", Qt::CaseInsensitive)) {
             m_threadCam->setLiveViewMode(MODE_LIVE_PREPROCESSED);
         } else if (0 == mode.compare("Camera Image", Qt::CaseInsensitive)) {
             m_threadCam->setLiveViewMode(MODE_LIVE_CAMERA);
+        } else if (0 == mode.compare("Chessboard Detection", Qt::CaseInsensitive)) {
+            m_threadCam->setLiveViewMode(MODE_LIVE_CHESSBOARD);
+            ui->buttonCalibrateRt->setEnabled(true);
         } else {
             m_threadCam->setLiveViewMode(MODE_LIVE_NONE);
         }
     }
 }
+
+
+/**
+  @brief    request external calibratio
+
+  just update state machinge of camera thread/inform the thread
+  **/
+void CenterDialog::calibrateExternalParameters()
+{
+    if(m_threadCam) {
+        m_threadCam->setLiveViewMode(MODE_LIVE_CHESSBOARD_SAVE);
+    }
+}
+
 
 /**
   @brief    set zoom mode of camera widget
@@ -204,12 +230,12 @@ void CenterDialog::setZoomMode()
         ui->scrollCameraWidget->setWidgetResizable(false);
 
         geo.moveTo(0,0);
-        geo.setWidth( 1920 );
-        geo.setHeight( 1080 );
+        geo.setWidth( CAMERA_RESOLUTION_X );
+        geo.setHeight( CAMERA_RESOLUTION_Y );
         ui->cameraWidget->setGeometry(geo);
         ui->cameraWidget->setMinimumSize(geo.size());
 
-        //ui->scrollCameraWidget->horizontalScrollBar()->setRange(0, 1920 - ui->scrollCameraWidget->geometry().width());
+        //ui->scrollCameraWidget->horizontalScrollBar()->setRange(0, CAMERA_RESOLUTION_X - ui->scrollCameraWidget->geometry().width());
         ui->scrollCameraWidget->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
         ui->scrollCameraWidget->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
         ui->scrollCameraWidget->viewport()->setGeometry(geo);
@@ -272,5 +298,6 @@ void CenterDialog::digitize(bool digi)
     ui->buttonRoiPoint->setDisabled(digi);
 
 }
+
 
 #endif // CENTERDIALOG_CPP

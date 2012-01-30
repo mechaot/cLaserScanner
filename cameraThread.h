@@ -14,6 +14,8 @@
 #define MODE_LIVE_NONE         0
 #define MODE_LIVE_CAMERA       1
 #define MODE_LIVE_PREPROCESSED 2
+#define MODE_LIVE_CHESSBOARD   3
+#define MODE_LIVE_CHESSBOARD_SAVE   3       ///< save current frame data
 
 
 /**
@@ -63,6 +65,9 @@ private:
 
     QPoint         m_posPoint;              ///< found laser point position
     IplImage*      m_profileData;
+
+    cv::Mat        m_CamIntrinsics;         ///< camera intrinsic parameters
+    cv::Mat        m_CamExtrinsics;         ///< camera extrinsic matrix
 
     bool           m_bDigitizing;           ///< state: are we digitizing for 3D?
 };

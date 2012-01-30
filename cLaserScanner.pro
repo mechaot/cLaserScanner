@@ -25,19 +25,20 @@ HEADERS  += mainwindow.h \
     cameraWidget.h \
     centerDialog.h \
     heightmapwidget.h \
-    cameraThread.h
+    cameraThread.h \
+    settings.h
 
 FORMS    += mainwindow.ui \
     centerdialog.ui
 
 win32 {
     QMAKE_CXXFLAGS += -m32
-    LIBS += -L$$PWD/opencv/lib -lopencv_highgui231 -lopencv_core231 -lopencv_imgproc231 -Lomp -lgomp
+    LIBS += -L$$PWD/opencv/lib -lopencv_highgui231 -lopencv_core231 -lopencv_imgproc231 -lopencv_calib3d231 -Lomp -lgomp
 }
 
 unix {
     QMAKE_CXXFLAGS += -fopenmp
-    LIBS += -L/usr/local/lib -lopencv_highgui -lopencv_core -lopencv_imgproc -Lomp -lgomp
+    LIBS += -L/usr/local/lib -lopencv_highgui -lopencv_core -lopencv_imgproc -lopencv_calib3d -Lomp -lgomp
 }
 
 
