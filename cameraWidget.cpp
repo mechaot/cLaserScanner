@@ -2,6 +2,7 @@
 #include "cameraWidget.h"
 #include "QtGui"
 #include "QtCore"
+#include "settings.h"
 
 #ifndef UINT8
     typedef unsigned char UINT8;
@@ -243,12 +244,28 @@ void CameraWidget::mouseReleaseEvent(QMouseEvent *event)
         if (m_iRoiSettingMode == ROI_TYPE_POINT) {
             m_roiPoint.setBottomRight(QPoint(int(px),int(py)));
             m_roiPoint = m_roiPoint.normalized();
+            if (m_roiPoint.top() < 0)
+                m_roiPoint.setTop(0);
+            if (m_roiPoint.left() < 0)
+                m_roiPoint.setLeft(0);
+            if (m_roiPoint.right() >= CAMERA_RESOLUTION_X)
+                m_roiPoint.setRight(CAMERA_RESOLUTION_X-1);
+            if (m_roiPoint.bottom() >= CAMERA_RESOLUTION_Y)
+                m_roiPoint.setBottom(CAMERA_RESOLUTION_Y-1);
             emit roiChangedPoint(m_roiPoint);
             emit finishedSettingRoi(false);
         }
         else if (m_iRoiSettingMode == ROI_TYPE_LINE) {
             m_roiLine.setBottomRight(QPoint(int(px),int(py)));
             m_roiLine = m_roiLine.normalized();
+            if (m_roiLine.top() < 0)
+                m_roiLine.setTop(0);
+            if (m_roiLine.left() < 0)
+                m_roiLine.setLeft(0);
+            if (m_roiLine.right() >= CAMERA_RESOLUTION_X)
+                m_roiLine.setRight(CAMERA_RESOLUTION_X-1);
+            if (m_roiLine.bottom() >= CAMERA_RESOLUTION_Y)
+                m_roiLine.setBottom(CAMERA_RESOLUTION_Y-1);
             emit roiChangedLine(m_roiLine);
             emit finishedSettingRoi(false);
         }

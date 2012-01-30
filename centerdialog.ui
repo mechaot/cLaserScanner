@@ -382,7 +382,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="buttonMayavi">
+         <widget class="QPushButton" name="button3D">
           <property name="enabled">
            <bool>true</bool>
           </property>

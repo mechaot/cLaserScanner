@@ -77,6 +77,8 @@ void HeightmapWidget::setImage(const IplImage *img)
           }
       } else if ((img->nChannels == 3) && (img->depth == IPL_DEPTH_64F)) {
           //DEBUG(1,QString("Convert color image 64F3 (%1, %2)").arg(img->width).arg(img->height));
+
+          //WARNING: CHEATING! HEIGHTMAPWIDGET DOES NOT!!! DO STANDARD COLOR IMAGING; OTHER FORMAT!!!
           UINT8 r;
           UINT8 g;
           UINT8 b;
@@ -96,7 +98,7 @@ void HeightmapWidget::setImage(const IplImage *img)
                   g = (UINT8) *(pix_d+1);
                   b = (UINT8) *(pix_d+2);
 
-                  pixval = 0x00000000 | (((UINT32)(r)) << 16) | (((UINT32)(g)) << 8) | r;
+                  pixval = 0x00000000 | (((UINT32)(r)) << 16) | (((UINT32)(r)) << 8) | r;
                   //if (pixval != 0xff000000)  DEBUG(1,QString::number(pixval,16));
                   //pixval = x*y;
                   *(pDstBase + x) = pixval;

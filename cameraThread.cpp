@@ -25,9 +25,8 @@ CameraThread::CameraThread(QObject *parent) :
     //channel 1: energy of the maximum found (0 for "copies"; i.e. we triple lines to fill spaces)
     //channel 2: zero
     //note: size is transposed with respect to camera resolution because laser scanner is vertical
-    m_scanData = cvCreateImage( cvSize(CAMERA_RESOLUTION_Y, CAMERA_RESOLUTION_X), IPL_DEPTH_64F, 3 );
-
-    cvZero(m_scanData);
+    m_scanData = NULL;
+    m_pointCloud = NULL;
 
     //load config file for calibration filenames
     loadInternalCalibration("internal.xml");
@@ -43,6 +42,8 @@ CameraThread::~CameraThread()
         digitize(false);
     if (m_iplImage)
         cvReleaseImage(&m_iplImage);
+    if (m_scanData)
+        cvReleaseImage(&m_scanData);
 }
 
 /**
@@ -97,6 +98,17 @@ void CameraThread::saveExternalCalibration(const QString& fileName)
 void CameraThread::digitize(bool digi)
 {
     m_bDigitizing = digi;
+    if (digi) {
+        if (m_scanData && m_scanData->width == m_roiLine.height() && m_scanData->height == m_roiPoint.width()) {
+            //nothing in the setup has changed, we can continue scanning
+            return;
+        }
+        if (m_scanData) {
+            cvReleaseImage(&m_scanData);
+        }
+        m_scanData = cvCreateImage( cvSize(m_roiLine.height(), m_roiPoint.width()), IPL_DEPTH_64F, 3 );
+        cvZero(m_scanData);
+    }
 }
 
 /**
@@ -158,6 +170,16 @@ void CameraThread::setLiveViewMode(int mode)
     m_iLiveViewMode = mode;
 }
 
+
+/**
+  @brief    get current live view state
+  @return   m_iLiveViewMode
+  **/
+int CameraThread::liveViewMode()
+{
+    return m_iLiveViewMode;
+}
+
 /**
   @brief    slot to set roi for point
   **/
@@ -207,7 +229,7 @@ void CameraThread::setRoi(const QRect &roi, int roitype)
 
 
 **/
-IplImage *CameraThread::evaluateImage(IplImage *img)
+IplImage *CameraThread::evaluateImage(IplImage *img, IplImage *debug /*= NULL*/)
 {
     //QTime tic = QTime::currentTime();
 
@@ -238,8 +260,8 @@ IplImage *CameraThread::evaluateImage(IplImage *img)
         cv::Rect lRect( m_roiLine.left(), m_roiLine.top(), m_roiLine.width(), m_roiLine.height() );
         //DEBUG(1, QString("Evaluate Point %1 %2 %3 %4").arg(m_roiLine.left()).arg(m_roiLine.top()).arg(m_roiLine.right()).arg(m_roiLine.bottom()));
 
-        cvSetImageROI(img,lRect);
         // sub-image
+        cvSetImageROI(img,lRect);
         IplImage *lineImage = cvCreateImage( cvSize(lRect.width, lRect.height), IPL_DEPTH_32F, 1 );
         IplImage *temp = cvCreateImage( cvSize(lRect.width, lRect.height), IPL_DEPTH_8U, 1 );
         cvConvertScale(img,lineImage);
@@ -257,48 +279,62 @@ IplImage *CameraThread::evaluateImage(IplImage *img)
         float maxval;
         int   xpos;
 
-        for(int y = 0; y < lRect.height; y++) { //for every row search max
+        int slider_x = m_posPoint.x() - m_roiPoint.x();
+        for(int y = 0; y < lineImage->height; y++) { //for every row search max
             float *data = (float*) (lineImage->imageData + y * lineImage->widthStep);
             maxval = *data;
             xpos = 0;
-            for(int x = 1; x < lRect.width; x++) {
-                ++data;
+            for(int x = 1; x < lineImage->width; x++) {
+                data += lineImage->nChannels;
                 if (*data > maxval) {
                     maxval = *data;
                     xpos = x;
                 }
             }
-            cvDrawCircle(img, cvPoint(xpos /*+ lRect.x*/,y+lRect.y), 2, cvScalar(0xaf), 1);
-
-            if (m_posPoint.x() >= 0 && m_posPoint.x() < m_scanData->height && xpos >= 0 && xpos < m_scanData->width) {
-                if(m_bDigitizing) {
-                    double *data = (double*) (m_scanData->imageData + m_posPoint.x()*m_scanData->widthStep + img->nChannels*(y+lRect.height)*sizeof(double)); //
-                    //if (maxval >= *(data+1)) {   //if stronger/better than old value; then overwrite it
-                        *data =  xpos ; //todo: make it different from that
-                        *(data+1) =  maxval;
-                    //}
-                    /*
-                    //also do the line above, if applicable
-                    data = (double*) (m_scanData->imageData + (m_posPoint.x()-1)*m_scanData->widthStep + y*sizeof(double)); //
-                    if (m_posPoint.x() >= 1) { //if line above exists
-                        if(*(data+1) != 0.0) {   //if line above is unset
-                            *data = xpos;
-                            *(data+1) = maxval;
-                        }
-                    }
-                    //also do the line below if applicable
-                    data = (double*) (m_scanData->imageData + (m_posPoint.x()+1)*m_scanData->widthStep + y*sizeof(double)); //
-                    if ((m_posPoint.x()+1) <  m_scanData->height) { //if line below exists
-                        if(*(data+1) != 0.0) {   //if line below is unset
-                            *data = xpos;
-                            *(data+1) = maxval;
-                        }
-                    }
-                    */
+            if (maxval < 50)
+                continue;
+            if (debug) {
+                cvDrawCircle(debug, cvPoint(xpos + lRect.x,y+lRect.y), 1, cvScalar(0xff,0x00,0xff,0x00), 1);
+            } else {
+                cvDrawCircle(img, cvPoint(xpos + lRect.x,y+lRect.y), 1, cvScalar(0xff), 1);
+            }
+            if (m_bDigitizing && slider_x >= 0 && slider_x < m_scanData->height && xpos >= 0 && xpos < m_scanData->width) {
+                double *data = (double*) (m_scanData->imageData + slider_x*m_scanData->widthStep + m_scanData->nChannels*y*sizeof(double)); //
+                if (maxval >= *(data+1)) {   //if stronger/better than old value; then overwrite it
+                    *data =  xpos ; //todo: make it different from that
+                    *(data+1) =  maxval;
                 }
-                //*(data+2) = 0;
-
-                //points.append( QPointF(xpos,y) );
+                //also do the line above, if applicable
+                if (slider_x >= 1) { //if line above exists
+                    data = (double*) (m_scanData->imageData + (slider_x-1)*m_scanData->widthStep + m_scanData->nChannels*y*sizeof(double)); //
+                    if(*(data+1) != 0.0) {   //if line above is unset
+                        *data = xpos;
+                        *(data+1) = maxval / 3.; //lower power for neighbour
+                    }
+                }
+                if (slider_x >= 2) { //if line above exists
+                    data = (double*) (m_scanData->imageData + (slider_x-2)*m_scanData->widthStep + m_scanData->nChannels*y*sizeof(double)); //
+                    if(*(data+1) != 0.0) {   //if line above is unset
+                        *data = xpos;
+                        *(data+1) = maxval / 5.; //lower power for neighbour
+                    }
+                }
+                //also do the line below if applicable
+                if ((slider_x+1) <  m_scanData->height) { //if line below exists
+                    data = (double*) (m_scanData->imageData + (slider_x+1)*m_scanData->widthStep + m_scanData->nChannels*y*sizeof(double)); //
+                    if(*(data+1) != 0.0) {   //if line below is unset
+                        *data = xpos;
+                        *(data+1) = maxval / 3.;
+                    }
+                }
+                //also do the line below if applicable
+                if ((slider_x+2) <  m_scanData->height) { //if line below exists
+                    data = (double*) (m_scanData->imageData + (slider_x+2)*m_scanData->widthStep + m_scanData->nChannels*y*sizeof(double)); //
+                    if(*(data+1) != 0.0) {   //if line below is unset
+                        *data = xpos;
+                        *(data+1) = maxval / 5.;
+                    }
+                }
             }
         }
         if (m_bDigitizing) {
@@ -366,24 +402,25 @@ void CameraThread::run()
             m_camWidget->setImage(m_iplImage);
         } else {
             cvSplit(m_iplImage, NULL, NULL, gray, NULL);
-            IplImage *grayF = cvCreateImage(cvSize(gray->width, gray->height), IPL_DEPTH_32F, 1);
-            cvConvertScale(gray,grayF,1.);
-            grayF = evaluateImage(grayF);
+            IplImage *grayF32 = cvCreateImage(cvSize(gray->width, gray->height), IPL_DEPTH_32F, 1);
+            cvConvertScale(gray,grayF32);
 
-            cvConvertScale(grayF,gray);
+            IplImage* debug = cvCreateImage(cvSize(m_iplImage->width, m_iplImage->height), m_iplImage->depth, 3);
+            cvCvtColor(gray, debug, CV_GRAY2BGR);    //better send a (formally) color image to the camera widget
+
+            grayF32 = evaluateImage(grayF32,debug);
+
 
             if (m_camWidget) {
                 if (MODE_LIVE_PREPROCESSED == m_iLiveViewMode) {
-                    IplImage* temp = cvCreateImage(cvSize(m_iplImage->width, m_iplImage->height), m_iplImage->depth, 3);
-                    cvCvtColor(gray, temp, CV_GRAY2BGR);    //better send a (formally) color image to the camera widget
-                    m_camWidget->setImage(temp);
-                    cvReleaseImage(&temp);
+                    m_camWidget->setImage(debug);
                 } else if (MODE_LIVE_CAMERA == m_iLiveViewMode) {
                     m_camWidget->setImage(m_iplImage);
                 //else do nothing (MODE_LIVE_NONE == m_iLiveViewMode)
                 }
             }
-            cvReleaseImage(&grayF);
+            cvReleaseImage(&debug);
+            cvReleaseImage(&grayF32);
         }
 
         //cvReleaseImage(&m_iplImage);  //this one is auto-cleared
@@ -394,4 +431,58 @@ void CameraThread::run()
     DEBUG(10,"Exiting thread.");
 }
 
+/**
+  @brief    set the size-unchanged heightmap to all zeros
+  **/
+void CameraThread::clearHeightmap()
+{
+    if (m_scanData)
+        cvZero(m_scanData);
+    emit newScanData();
+}
 
+
+/**
+  @brief    calculate a 3D point cloud from heightmap and calibration data
+
+  stored in m_pointCloud
+  **/
+void CameraThread::triangulatePointCloud()
+{
+    if (m_pointCloud)
+        cvReleaseImage(&m_pointCloud);
+
+    m_pointCloud = cvCreateImage(cvSize(m_scanData->width, m_scanData->height), IPL_DEPTH_64F, 3);
+
+    QTemporaryFile file("temp_XXXXXX.xyz");
+    file.setAutoRemove(false);
+    file.open();
+
+    //cvSmooth(m_pointCloud, m_pointCloud, CV_GAUSSIAN, 7,7);
+
+    double *data = (double*) m_pointCloud->imageData;
+    double z;
+    for (int y = 0; y < m_pointCloud->height; y++) {
+        data = (double*) (m_pointCloud->imageData + y * m_scanData->widthStep);
+        for (int x = 0; x < m_pointCloud->width; x++) { //linear "triangulation"
+            *data = x;
+            ++data;
+            *data = y;
+            ++data;
+            z = *((double*) (m_scanData->imageData + y * m_scanData->widthStep + x * m_scanData->nChannels * sizeof(double))  );
+            *data = z;
+            ++data;
+            if (z != 0)
+                file.write( QString("%1 %2 %3 0. 0. 1.\n").arg(x).arg(y).arg(-3.0*z).toAscii() );
+        }
+    }
+    file.flush();
+    QFileInfo info(file);
+    QString app("C:\\Program Files (x86)\\VCG\\MeshLab\\meshlab.exe");
+    QString path("C:\\Program Files (x86)\\VCG\\MeshLab");
+    QStringList args;
+    args.append(info.absoluteFilePath());
+    DEBUG(1, QString("Temp-File: %1").arg(info.absoluteFilePath()));
+    file.close();
+    QProcess::startDetached(app, args, path);
+}

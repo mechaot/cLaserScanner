@@ -40,6 +40,7 @@ public slots:
     void setCvCamera(int cvIndex, CvCapture* cvCapture);
     void setCameraWidget(CameraWidget* target);
     void setLiveViewMode(int mode);
+    int liveViewMode();
     void setRoi(const QRect &roi, int roitype);
     void setRoiPoint(const QRect &roi);
     void setRoiLine(const QRect &roi);
@@ -48,12 +49,14 @@ public slots:
     void loadExternalCalibration(const QString& fileName);
     void saveInternalCalibration(const QString& fileName);
     void saveExternalCalibration(const QString& fileName);
+    void clearHeightmap();
+    void triangulatePointCloud();
 
 private:
     int            captureFrame();
     void           setModeOfOperation(int mode);
     int            modeOfOperation();
-    IplImage*      evaluateImage(IplImage *img);
+    IplImage*      evaluateImage(IplImage *img, IplImage *debug = NULL);
 
 private:
     int            m_iMode;                 ///< mode of operation
@@ -75,6 +78,7 @@ private:
     bool           m_bDigitizing;           ///< state: are we digitizing for 3D?
 public:
     IplImage*      m_scanData;              ///< scanned data
+    IplImage*      m_pointCloud;            ///< double x,y,z point cloud data
 
 };
 

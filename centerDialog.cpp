@@ -38,7 +38,6 @@ CenterDialog::CenterDialog(QWidget *parent) :
     connect(ui->cameraWidget, SIGNAL(finishedSettingRoi(bool)), ui->buttonRoiPoint, SLOT(setChecked(bool)));
     connect(ui->buttonDigitize, SIGNAL(toggled(bool)), this, SLOT(digitize(bool)));
     connect(ui->buttonCalibrateRt, SIGNAL(clicked()), this, SLOT(calibrateExternalParameters()));
-
     //ui->scrollCameraWidget->setWidget(ui->cameraWidget);
 
     //ui->cameraWidget->setAutoFillBackground(false);
@@ -148,6 +147,8 @@ void CenterDialog::connectCamera(bool connect)
 
             this->connect(m_threadCam, SIGNAL(pointPosition(int,int)), this, SLOT(displayPointPosition(int,int)));
             this->connect(m_threadCam, SIGNAL(newScanData()), this, SLOT(updateHeightmapWidget()));
+            this->connect(ui->buttonHeightmapClear, SIGNAL(clicked()), m_threadCam, SLOT(clearHeightmap()));
+            this->connect(ui->button3D, SIGNAL(clicked()), m_threadCam, SLOT(triangulatePointCloud()));
         } else {
             QMessageBox::critical(this,"Camera connect failed", "Could not get camera ID. Try rescanning for cameras.");
         }
@@ -205,6 +206,20 @@ void CenterDialog::calibrateExternalParameters()
 {
     if(m_threadCam) {
         m_threadCam->setLiveViewMode(MODE_LIVE_CHESSBOARD_SAVE);
+
+        QProgressDialog progress("Calibrating external parameters from checkerboard.", "Abort", 0, -1, this);
+        progress.setMinimumDuration(1);
+        progress.setValue(0);
+        while(m_threadCam->liveViewMode() == MODE_LIVE_CHESSBOARD_SAVE) {
+            qApp->processEvents();
+            if (progress.wasCanceled()) {
+                break;
+            }
+        }
+        if (m_threadCam->liveViewMode() == MODE_LIVE_CHESSBOARD)
+            QMessageBox::information(this, "External Calibration","Parameters successfully saved.");
+        else
+            QMessageBox::warning(this, "External Calibration","External calibration failed!");
     }
 }
 
