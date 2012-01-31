@@ -27,8 +27,10 @@ CameraWidget::CameraWidget(QWidget *parent) :
 
     m_penPoint = QPen(QColor(0xff00ff00));
     m_penPoint.setStyle(Qt::DotLine);
+    m_penPoint.setWidth(2);
     m_penLine = QPen(QColor(0xffff0000));
     m_penLine.setStyle(Qt::DotLine);
+    m_penLine.setWidth(2);
     m_penCursor = QPen(QColor(0xff00ffff));
     m_penCursor.setStyle(Qt::DashDotLine);
 
@@ -90,6 +92,21 @@ void CameraWidget::setImage(const IplImage *img)
               for(int x=0; x < img->width; x++) {
                   pix = img->imageData + y*img->widthStep + x*img->nChannels;
                   pixval = 0xFF000000 | (((*(pix+2)) & 0xff)<< 16) | (((*(pix+1)) & 0xff) << 8) | ((*pix) & 0xff);
+                  *(pDstBase + x) = pixval;
+              }
+          }
+      } else if ((img->nChannels == 3) && (img->depth == IPL_DEPTH_32F)) {
+          //DEBUG(50,"Convert color image");
+          UINT32 pixval;
+          float* pix;
+
+          int y;
+          /* //#pragma omp parallel for private(y,pixval,pix,pDstBase) */
+          for(y=0; y < img->height; y++) {
+              pDstBase = (UINT32*) m_image.scanLine(y);
+              for(int x=0; x < img->width; x++) {
+                  pix = (float*) (img->imageData + y*img->widthStep + x*img->nChannels);
+                  pixval = (((UINT32)(*(pix+2)) &0xff) << 16) + (((UINT32)(*(pix+1)) &0xff) << 8) + ( (UINT32)(*pix) & 0xff );
                   *(pDstBase + x) = pixval;
               }
           }

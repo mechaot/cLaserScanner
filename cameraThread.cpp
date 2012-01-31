@@ -371,7 +371,7 @@ IplImage *CameraThread::evaluateImage(IplImage *img, IplImage *debug /*= NULL*/)
         cvConvertScale(img,lineImage);
         cvResetImageROI(img);
 
-        cvSmooth(lineImage, lineImage, CV_GAUSSIAN, 15,7);
+        cvSmooth(lineImage, lineImage, CV_GAUSSIAN, 19,5);
         //cvCvtColor(m_iplImage, gray, CV_RGB2GRAY);
         //double lineFilterCoeffs[] = { -3, -2, -1, -1, 0, 1, 2, 5, 7, 11, 7, 5, 2, 1, 0, -1, -1, -2, -3};
         //CvMat lineFilter;
@@ -380,63 +380,64 @@ IplImage *CameraThread::evaluateImage(IplImage *img, IplImage *debug /*= NULL*/)
         //cvFilter2D( lineImage ,lineImage, &lineFilter, cvPoint(-1,-1));
         //cvSmooth(grayF,grayF, CV_GAUSSIAN, 15, 1);
 
-        float maxval;
+        float power;
         int   xpos;
 
         int slider_x = m_posPoint.x() - m_roiPoint.left();
         for(int y = 0; y < lineImage->height; y++) { //for every row search max
             float *data = (float*) (lineImage->imageData + y * lineImage->widthStep);
-            maxval = *data;
+            power = 0;
             xpos = 0;
-            for(int x = 1; x < lineImage->width; x++) {
+            for(int x = 0; x < lineImage->width; x++) {
                 data += lineImage->nChannels;
-                if (*data > maxval) {
-                    maxval = *data;
+                if (*data > power) {
+                    power = *data;
                     xpos = x;
                 }
             }
-            if (maxval < m_iLinePowerThreshold)
+            if (power < m_iLinePowerThreshold)
                 continue;
             if (debug) {
                 cvDrawCircle(debug, cvPoint(xpos + lRect.x,y+lRect.y), 1, cvScalar(0xff,0x00,0xff,0x00), 1);
             } else {
                 cvDrawCircle(img, cvPoint(xpos + lRect.x,y+lRect.y), 1, cvScalar(0xff), 1);
             }
+            double h = 255.0 - (double(xpos) * 255.0 / m_roiLine.width());
             if (m_bDigitizing && slider_x >= 0 && slider_x < m_scanData->height && xpos >= 0 && xpos < m_scanData->width) {
                 double *data = (double*) (m_scanData->imageData + slider_x*m_scanData->widthStep + m_scanData->nChannels*y*sizeof(double)); //
-                if (maxval >= *(data+1)) {   //if stronger/better than old value; then overwrite it
-                    *data =  xpos ; //todo: make it different from that
-                    *(data+1) =  maxval;
+                if (power >= *(data+1)) {   //if stronger/better than old value; then overwrite it
+                    *data = h ; //todo: make it different from that
+                    *(data+1) =  power;
                 }
                 //also do the line above, if applicable
                 if (slider_x >= 1) { //if line above exists
                     data = (double*) (m_scanData->imageData + (slider_x-1)*m_scanData->widthStep + m_scanData->nChannels*y*sizeof(double)); //
                     if(*(data+1) != 0.0) {   //if line above is unset
-                        *data = xpos;
-                        *(data+1) = maxval / 3.; //lower power for neighbour
+                        *data = h;
+                        *(data+1) = power / 3.; //lower power for neighbour
                     }
                 }
                 if (slider_x >= 2) { //if line above exists
                     data = (double*) (m_scanData->imageData + (slider_x-2)*m_scanData->widthStep + m_scanData->nChannels*y*sizeof(double)); //
                     if(*(data+1) != 0.0) {   //if line above is unset
-                        *data = xpos;
-                        *(data+1) = maxval / 5.; //lower power for neighbour
+                        *data = h;
+                        *(data+1) = power / 5.; //lower power for neighbour
                     }
                 }
                 //also do the line below if applicable
                 if ((slider_x+1) <  m_scanData->height) { //if line below exists
                     data = (double*) (m_scanData->imageData + (slider_x+1)*m_scanData->widthStep + m_scanData->nChannels*y*sizeof(double)); //
                     if(*(data+1) != 0.0) {   //if line below is unset
-                        *data = xpos;
-                        *(data+1) = maxval / 3.;
+                        *data = h;
+                        *(data+1) = power / 3.;
                     }
                 }
                 //also do the line below if applicable
                 if ((slider_x+2) <  m_scanData->height) { //if line below exists
                     data = (double*) (m_scanData->imageData + (slider_x+2)*m_scanData->widthStep + m_scanData->nChannels*y*sizeof(double)); //
                     if(*(data+1) != 0.0) {   //if line below is unset
-                        *data = xpos;
-                        *(data+1) = maxval / 5.;
+                        *data = h;
+                        *(data+1) = power / 5.;
                     }
                 }
             }
@@ -473,7 +474,6 @@ void CameraThread::run()
             continue;
         }
 
-        IplImage* gray = cvCreateImage(cvSize(m_iplImage->width, m_iplImage->height), m_iplImage->depth, 1);
 
 
         //cvConvertScale(g,g,0.2);
@@ -482,6 +482,7 @@ void CameraThread::run()
         //cvSmooth(grayF,grayF, CV_GAUSSIAN, 3, 3);
 
         if ((m_iLiveViewMode == MODE_LIVE_CHESSBOARD) || (m_iLiveViewMode == MODE_LIVE_CHESSBOARD_SAVE)) {
+            IplImage* gray = cvCreateImage(cvSize(m_iplImage->width, m_iplImage->height), m_iplImage->depth, 1);
             int corner_count;
             CvPoint2D32f* corners = new CvPoint2D32f[ CALIBRATION_CHESSBOARD_WIDTH *  CALIBRATION_CHESSBOARD_HEIGHT];
             int found = cvFindChessboardCorners(m_iplImage, cvSize(CALIBRATION_CHESSBOARD_WIDTH, CALIBRATION_CHESSBOARD_HEIGHT), corners, &corner_count);
@@ -498,43 +499,38 @@ void CameraThread::run()
                     m_iLiveViewMode = MODE_LIVE_CHESSBOARD;
                 }
             }
-
+            cvReleaseImage(&gray);
             // Draw it
             cvDrawChessboardCorners( m_iplImage, cvSize(CALIBRATION_CHESSBOARD_WIDTH, CALIBRATION_CHESSBOARD_HEIGHT), corners, corner_count, found );
             delete [] corners;
 
             m_camWidget->setImage(m_iplImage);
         } else {
-            IplImage* b = cvCreateImage(cvSize(m_iplImage->width, m_iplImage->height), m_iplImage->depth, 1);
-            IplImage* g = cvCreateImage(cvSize(m_iplImage->width, m_iplImage->height), m_iplImage->depth, 1);
-            cvSplit(m_iplImage, b, g, gray, NULL);
-            IplImage *grayF32 = cvCreateImage(cvSize(gray->width, gray->height), IPL_DEPTH_32F, 1);
-            cvConvertScale(gray,grayF32);
+            IplImage* gray = cvCreateImage(cvSize(m_iplImage->width, m_iplImage->height), IPL_DEPTH_8U, 1);
+            IplImage *grayF32 = cvCreateImage(cvSize(m_iplImage->width, m_iplImage->height), IPL_DEPTH_32F, 1);
 
-            IplImage* debug = cvCreateImage(cvSize(m_iplImage->width, m_iplImage->height), m_iplImage->depth, 3);
-
-            cvCvtColor(gray, debug, CV_GRAY2BGR);    //better send a (formally) color image to the camera widget
-
-            grayF32 = evaluateImage(grayF32,debug);
-
-            cvConvertScale(b,b,0.4);
-            cvConvertScale(g,g,0.4);
-            cvSub(grayF32, b, grayF32);
-            cvSub(grayF32, g, grayF32);
-
-            cvReleaseImage(&b);
-            cvReleaseImage(&g);
-
-            //truncate to zero
+            //truncate to zero; remove negatives
             float *data;
+            float value;
             for(int y = 0; y < grayF32->height; y++) { //for every row search max
-                data = (float*) (grayF32->imageData + y* grayF32->widthStep);
-                for(int x = 1; x < grayF32->width*grayF32->nChannels; x++) {
-                    if (*data < 0.0)
-                        *data = 0.0;
+                data = (float*) (grayF32->imageData + y * grayF32->widthStep);
+                for(int x = 0; x < grayF32->width; x++) {
+                    //value = 0;
+                    //value +=  *((unsigned char*)(gray->imageData + y*gray->widthStep + x*gray->nChannels ));
+                    value = ((float) ( *((unsigned char*)m_iplImage->imageData + y*m_iplImage->widthStep + x*m_iplImage->nChannels + 2) ));
+                    value -= ((float) ( *((unsigned char*)m_iplImage->imageData + y*m_iplImage->widthStep + x*m_iplImage->nChannels + 1) )) * 0.25;
+                    value -= ((float) ( *((unsigned char*)m_iplImage->imageData + y*m_iplImage->widthStep + x*m_iplImage->nChannels + 0) )) * 0.25;
+
+                    *data = (value > 0.0) ? value : 0.0;
                     ++data;
                 }
             }
+
+            IplImage* debug = cvCreateImage(cvSize(m_iplImage->width, m_iplImage->height), IPL_DEPTH_8U, 3);
+            cvCvtScale(grayF32, gray);
+            cvCvtColor(gray, debug, CV_GRAY2BGR);    //better send a (formally) color image to the camera widget
+
+            grayF32 = evaluateImage(grayF32,debug);
 
             if (m_camWidget) {
                 if (MODE_LIVE_PREPROCESSED == m_iLiveViewMode) {
@@ -546,11 +542,10 @@ void CameraThread::run()
             }
             cvReleaseImage(&debug);
             cvReleaseImage(&grayF32);
+            cvReleaseImage(&gray);
         }
 
         //cvReleaseImage(&m_iplImage);  //this one is auto-cleared
-        cvReleaseImage(&gray);
-
         //delete [] lineFilterCoeffs;
     }
     DEBUG(10,"Exiting thread.");
@@ -616,4 +611,5 @@ void CameraThread::triangulatePointCloud()
     file.close();
     QProcess::startDetached(app, args, path);
 }
+
 
