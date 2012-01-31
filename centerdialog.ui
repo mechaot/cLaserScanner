@@ -19,7 +19,7 @@
      <x>56</x>
      <y>20</y>
      <width>1150</width>
-     <height>621</height>
+     <height>611</height>
     </rect>
    </property>
    <layout class="QHBoxLayout" name="pageLayout" stretch="2,1">
@@ -230,7 +230,7 @@
            <x>0</x>
            <y>0</y>
            <width>654</width>
-           <height>379</height>
+           <height>349</height>
           </rect>
          </property>
          <widget class="CameraWidget" name="cameraWidget" native="true">
@@ -395,7 +395,7 @@
            <string notr="true">font: 75 12pt;</string>
           </property>
           <property name="text">
-           <string>Cursor Position [px]:</string>
+           <string>Cursor Position [x, y]:</string>
           </property>
          </widget>
         </item>
@@ -425,7 +425,7 @@
            <string notr="true">font: 75 12pt;</string>
           </property>
           <property name="text">
-           <string>Point Position [px]:</string>
+           <string>Point Position [x, y]:</string>
           </property>
          </widget>
         </item>
@@ -445,7 +445,74 @@
        </layout>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_2"/>
+       <layout class="QHBoxLayout" name="horizontalLayout_11" stretch="1,0,0,0,0,0">
+        <item>
+         <widget class="QLabel" name="label_17">
+          <property name="text">
+           <string>Linear Pose Estimation: a=</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QDoubleSpinBox" name="spinRegressionA">
+          <property name="decimals">
+           <number>5</number>
+          </property>
+          <property name="minimum">
+           <double>-9999.989999999999782</double>
+          </property>
+          <property name="maximum">
+           <double>9999.989999999999782</double>
+          </property>
+          <property name="singleStep">
+           <double>0.000100000000000</double>
+          </property>
+          <property name="value">
+           <double>1.000000000000000</double>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_18">
+          <property name="text">
+           <string>b=</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QDoubleSpinBox" name="spinRegressionB">
+          <property name="minimum">
+           <double>-9999.000000000000000</double>
+          </property>
+          <property name="maximum">
+           <double>9999.989999999999782</double>
+          </property>
+          <property name="singleStep">
+           <double>0.010000000000000</double>
+          </property>
+          <property name="value">
+           <double>0.000000000000000</double>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_19">
+          <property name="text">
+           <string>Slider Position [mm]:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="labelPositionMM">
+          <property name="text">
+           <string>x mm</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
      </layout>
     </item>

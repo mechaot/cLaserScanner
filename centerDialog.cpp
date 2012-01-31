@@ -320,7 +320,11 @@ void CenterDialog::displayCursorPosition(int x, int y)
   **/
 void CenterDialog::displayPointPosition(int x, int y)
 {
+    double a = ui->spinRegressionA->value();
+    double b = ui->spinRegressionB->value();
+    double pos = a * double(x) + b;
     ui->labelLaserPoint->setText( QString("%1, %2").arg(x).arg(y) );
+    ui->labelPositionMM->setText( QString::number(pos, 'f', 2));
 }
 
 /**

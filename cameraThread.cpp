@@ -358,7 +358,7 @@ IplImage *CameraThread::evaluateImage(IplImage *img, IplImage *debug /*= NULL*/)
             m_posPoint.setY(-1);
         }
 
-        emit pointPosition(m_posPoint.x(), m_posPoint.y() );
+        emit pointPosition(m_posPoint.x(), m_posPoint.y());
     }
     if (m_roiLine.width() > 0) {
         cv::Rect lRect( m_roiLine.left(), m_roiLine.top(), m_roiLine.width(), m_roiLine.height() );
@@ -367,11 +367,10 @@ IplImage *CameraThread::evaluateImage(IplImage *img, IplImage *debug /*= NULL*/)
         // sub-image
         cvSetImageROI(img,lRect);
         IplImage *lineImage = cvCreateImage( cvSize(lRect.width, lRect.height), IPL_DEPTH_32F, 1 );
-        IplImage *temp = cvCreateImage( cvSize(lRect.width, lRect.height), IPL_DEPTH_8U, 1 );
         cvConvertScale(img,lineImage);
         cvResetImageROI(img);
 
-        cvSmooth(lineImage, lineImage, CV_GAUSSIAN, 19,5);
+        cvSmooth(lineImage, lineImage, CV_GAUSSIAN, 17,5);
         //cvCvtColor(m_iplImage, gray, CV_RGB2GRAY);
         //double lineFilterCoeffs[] = { -3, -2, -1, -1, 0, 1, 2, 5, 7, 11, 7, 5, 2, 1, 0, -1, -1, -2, -3};
         //CvMat lineFilter;
@@ -389,7 +388,8 @@ IplImage *CameraThread::evaluateImage(IplImage *img, IplImage *debug /*= NULL*/)
             power = 0;
             xpos = 0;
             for(int x = 0; x < lineImage->width; x++) {
-                data += lineImage->nChannels;
+                //data += lineImage->nChannels;
+                ++data;
                 if (*data > power) {
                     power = *data;
                     xpos = x;
@@ -445,11 +445,7 @@ IplImage *CameraThread::evaluateImage(IplImage *img, IplImage *debug /*= NULL*/)
         if (m_bDigitizing) {
             emit newScanData();
         }
-
-        cvReleaseImage( &temp );
         cvReleaseImage( &lineImage);
-
-        //emit linePosition(points);
     }
     //QTime toc = QTime::currentTime();
     //DEBUG(1, QString("Took: %1 ms").arg( tic.msecsTo(toc)));
@@ -462,6 +458,8 @@ IplImage *CameraThread::evaluateImage(IplImage *img, IplImage *debug /*= NULL*/)
 void CameraThread::run()
 {
     m_bTerminationRequest = false;  //initially we don't want to kill us
+
+
     while (!m_bTerminationRequest) {
         if(!m_cvCapture)     {
             DEBUG(10, "m_cvCapture not ready. Terminating thread.");
@@ -473,8 +471,6 @@ void CameraThread::run()
             DEBUG(20, "image invalid, retrying");
             continue;
         }
-
-
 
         //cvConvertScale(g,g,0.2);
         //cvSub(gray, b, gray);
@@ -491,7 +487,6 @@ void CameraThread::run()
                 cvCvtColor( m_iplImage, gray, CV_BGR2GRAY );
                 cvFindCornerSubPix( gray, corners, corner_count, cvSize( 5, 5 ),
                     cvSize( -1, -1 ), cvTermCriteria( CV_TERMCRIT_EPS+CV_TERMCRIT_ITER, 30, 0.1 ));
-
 
                 if (m_iLiveViewMode == MODE_LIVE_CHESSBOARD_SAVE) { //save request; save it and go to normal mode
                     //cvSave( "Chessbaord.xml", external_matrix);
@@ -548,6 +543,9 @@ void CameraThread::run()
         //cvReleaseImage(&m_iplImage);  //this one is auto-cleared
         //delete [] lineFilterCoeffs;
     }
+
+
+
     DEBUG(10,"Exiting thread.");
 }
 
