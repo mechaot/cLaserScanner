@@ -3,6 +3,8 @@
 #include <opencv.hpp>
 #include <QTime>
 #include "settings.h"
+#include <QMessageBox>
+#include <QApplication>
 
 #define USE_OPENMP      1       ///< use openmp multiprocessin library to speed up things
 
@@ -20,13 +22,21 @@ CameraThread::CameraThread(QObject *parent) :
     m_iLiveViewMode = MODE_LIVE_PREPROCESSED;
     m_posPoint.setX(-1); m_posPoint.setY(-1);
     m_bDigitizing = false;
-
+    m_iLinePowerThreshold = 0;
+    m_iPointPowerThreshold = 0;
     //channel 0: position of the maximum found (cvSplit to display this only)
     //channel 1: energy of the maximum found (0 for "copies"; i.e. we triple lines to fill spaces)
     //channel 2: zero
     //note: size is transposed with respect to camera resolution because laser scanner is vertical
     m_scanData = NULL;
     m_pointCloud = NULL;
+
+    m_dScaleX = 1.;
+    m_dScaleY = 1.;
+    m_dScaleZ = 2.5;
+    m_dOffsetX = 0;
+    m_dOffsetY = 0;
+    m_dOffsetZ = 0;
 
     //load config file for calibration filenames
     loadInternalCalibration("internal.xml");
@@ -90,6 +100,69 @@ void CameraThread::saveExternalCalibration(const QString& fileName)
 
 }
 
+/**
+  @brief    set scale for triangulation
+  @param    scale new scale factor
+  **/
+void CameraThread::setScaleX(double scale)
+{
+    if (scale <= 0.0) {
+        DEBUG(1, "Warning: nonpositive scale factor!");
+    }
+    m_dScaleX = scale;
+}
+
+/**
+  @brief    set scale for triangulation
+  @param    scale new scale factor
+  **/
+void CameraThread::setScaleY(double scale)
+{
+    if (scale <= 0.0) {
+        DEBUG(1, "Warning: nonpositive scale factor!");
+    }
+    m_dScaleY = scale;
+}
+
+/**
+  @brief    set scale for triangulation
+  @param    scale new scale factor
+  **/
+void CameraThread::setScaleZ(double scale)
+{
+    if (scale <= 0.0) {
+        DEBUG(1, "Warning: nonpositive scale factor!");
+    }
+    m_dScaleZ = scale;
+}
+
+
+/**
+  @brief    set offset for triangulation
+  @param    scale new offset
+  **/
+void CameraThread::setOffsetX(double offset)
+{
+    m_dOffsetX = offset;
+}
+
+/**
+  @brief    set scaoffsetle for triangulation
+  @param    scale new offset
+  **/
+void CameraThread::setOffsetY(double offset)
+{
+    m_dOffsetY = offset;
+}
+
+/**
+  @brief    set offset for triangulation
+  @param    scale new offset
+  **/
+void CameraThread::setOffsetZ(double offset)
+{
+    m_dOffsetZ = offset;
+}
 
 /**
   @brief    tell us if we shall digitize
@@ -191,6 +264,32 @@ void CameraThread::setRoiPoint(const QRect &roi)
     m_roiPoint = roi;
 }
 
+
+/**
+  @brief set power threshold for point detection
+  @param    value new threshold value
+
+  Pixel values below threshold are not detected as line: so there may be "empty" spaces
+  **/
+void CameraThread::setPowerThresholdPoint(int value)
+{
+    m_iPointPowerThreshold = value;
+}
+
+
+
+/**
+  @brief set power threshold for line detection
+  @param    value new threshold value
+
+  Pixel values below threshold are not detected as line: so there may be "empty" spaces
+  **/
+void CameraThread::setPowerThresholdLine(int value)
+{
+    m_iLinePowerThreshold = value;
+}
+
+
 /**
   @brief    slot to set roi for line
   **/
@@ -251,8 +350,13 @@ IplImage *CameraThread::evaluateImage(IplImage *img, IplImage *debug /*= NULL*/)
         cvReleaseImage( &pointImage);
         //cvReleaseImage( &temp );
         //DEBUG(1, QString("Point: %1, %2").arg(maxloc.x).arg(maxloc.y));
-        m_posPoint.setX(maxloc.x + m_roiPoint.left());
-        m_posPoint.setY(maxloc.y + m_roiPoint.top());
+        if (max >= m_iPointPowerThreshold) {
+            m_posPoint.setX(maxloc.x + m_roiPoint.left());
+            m_posPoint.setY(maxloc.y + m_roiPoint.top());
+        } else {
+            m_posPoint.setX(-1);
+            m_posPoint.setY(-1);
+        }
 
         emit pointPosition(m_posPoint.x(), m_posPoint.y() );
     }
@@ -279,7 +383,7 @@ IplImage *CameraThread::evaluateImage(IplImage *img, IplImage *debug /*= NULL*/)
         float maxval;
         int   xpos;
 
-        int slider_x = m_posPoint.x() - m_roiPoint.x();
+        int slider_x = m_posPoint.x() - m_roiPoint.left();
         for(int y = 0; y < lineImage->height; y++) { //for every row search max
             float *data = (float*) (lineImage->imageData + y * lineImage->widthStep);
             maxval = *data;
@@ -291,7 +395,7 @@ IplImage *CameraThread::evaluateImage(IplImage *img, IplImage *debug /*= NULL*/)
                     xpos = x;
                 }
             }
-            if (maxval < 50)
+            if (maxval < m_iLinePowerThreshold)
                 continue;
             if (debug) {
                 cvDrawCircle(debug, cvPoint(xpos + lRect.x,y+lRect.y), 1, cvScalar(0xff,0x00,0xff,0x00), 1);
@@ -401,15 +505,36 @@ void CameraThread::run()
 
             m_camWidget->setImage(m_iplImage);
         } else {
-            cvSplit(m_iplImage, NULL, NULL, gray, NULL);
+            IplImage* b = cvCreateImage(cvSize(m_iplImage->width, m_iplImage->height), m_iplImage->depth, 1);
+            IplImage* g = cvCreateImage(cvSize(m_iplImage->width, m_iplImage->height), m_iplImage->depth, 1);
+            cvSplit(m_iplImage, b, g, gray, NULL);
             IplImage *grayF32 = cvCreateImage(cvSize(gray->width, gray->height), IPL_DEPTH_32F, 1);
             cvConvertScale(gray,grayF32);
 
             IplImage* debug = cvCreateImage(cvSize(m_iplImage->width, m_iplImage->height), m_iplImage->depth, 3);
+
             cvCvtColor(gray, debug, CV_GRAY2BGR);    //better send a (formally) color image to the camera widget
 
             grayF32 = evaluateImage(grayF32,debug);
 
+            cvConvertScale(b,b,0.4);
+            cvConvertScale(g,g,0.4);
+            cvSub(grayF32, b, grayF32);
+            cvSub(grayF32, g, grayF32);
+
+            cvReleaseImage(&b);
+            cvReleaseImage(&g);
+
+            //truncate to zero
+            float *data;
+            for(int y = 0; y < grayF32->height; y++) { //for every row search max
+                data = (float*) (grayF32->imageData + y* grayF32->widthStep);
+                for(int x = 1; x < grayF32->width*grayF32->nChannels; x++) {
+                    if (*data < 0.0)
+                        *data = 0.0;
+                    ++data;
+                }
+            }
 
             if (m_camWidget) {
                 if (MODE_LIVE_PREPROCESSED == m_iLiveViewMode) {
@@ -459,9 +584,14 @@ void CameraThread::triangulatePointCloud()
     file.open();
 
     //cvSmooth(m_pointCloud, m_pointCloud, CV_GAUSSIAN, 7,7);
-
     double *data = (double*) m_pointCloud->imageData;
     double z;
+
+    if (m_dScaleX == 0. || m_dScaleY == 0. || m_dScaleZ == 0.) {
+        QMessageBox::critical(QApplication::activeWindow(), "Error", "Error: One of the scale factors is zero. Division by zero! Cannot triangulate. Aborting.");
+        return;
+    }
+
     for (int y = 0; y < m_pointCloud->height; y++) {
         data = (double*) (m_pointCloud->imageData + y * m_scanData->widthStep);
         for (int x = 0; x < m_pointCloud->width; x++) { //linear "triangulation"
@@ -473,7 +603,7 @@ void CameraThread::triangulatePointCloud()
             *data = z;
             ++data;
             if (z != 0)
-                file.write( QString("%1 %2 %3 0. 0. 1.\n").arg(x).arg(y).arg(-3.0*z).toAscii() );
+                file.write( QString("%1 %2 %3 0. 0. 1.\n").arg(((double)x - m_dOffsetX)/m_dScaleX ).arg(((double)y - m_dOffsetY)/m_dScaleY ).arg(((double)z - m_dOffsetZ)/(-m_dScaleZ)).toAscii() );
         }
     }
     file.flush();
@@ -486,3 +616,4 @@ void CameraThread::triangulatePointCloud()
     file.close();
     QProcess::startDetached(app, args, path);
 }
+

@@ -42,8 +42,16 @@ public slots:
     void setLiveViewMode(int mode);
     int liveViewMode();
     void setRoi(const QRect &roi, int roitype);
+    void setPowerThresholdPoint(int value);
     void setRoiPoint(const QRect &roi);
+    void setPowerThresholdLine(int value);
     void setRoiLine(const QRect &roi);
+    void setScaleX(double scale);
+    void setScaleY(double scale);
+    void setScaleZ(double scale);
+    void setOffsetX(double offset);
+    void setOffsetY(double offset);
+    void setOffsetZ(double offset);
     void digitize(bool digi);
     void loadInternalCalibration(const QString& fileName);
     void loadExternalCalibration(const QString& fileName);
@@ -68,6 +76,8 @@ private:
     IplImage*      m_iplImage;              ///< image from opencv camera
     QRect          m_roiLine;               ///< region of interest for line detection
     QRect          m_roiPoint;              ///< region of interest for point detection
+    int            m_iLinePowerThreshold;   ///< minimum power to have laser line detected
+    int            m_iPointPowerThreshold;  ///< minimum power to have point detected
 
 
     QPoint         m_posPoint;              ///< found laser point position
@@ -76,6 +86,12 @@ private:
     cv::Mat        m_camExtrinsics;         ///< camera extrinsic matrix
 
     bool           m_bDigitizing;           ///< state: are we digitizing for 3D?
+    double         m_dScaleX;           ///< X-scale factor for triangulation
+    double         m_dScaleY;           ///< Y-scale factor for triangulation
+    double         m_dScaleZ;           ///< Z-scale factor for triangulation
+    double         m_dOffsetX;           ///< X-Offset  for triangulation
+    double         m_dOffsetY;           ///< Y-Offset  for triangulation
+    double         m_dOffsetZ;           ///< Z-Offset  for triangulation
 public:
     IplImage*      m_scanData;              ///< scanned data
     IplImage*      m_pointCloud;            ///< double x,y,z point cloud data

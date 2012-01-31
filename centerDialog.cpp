@@ -38,6 +38,13 @@ CenterDialog::CenterDialog(QWidget *parent) :
     connect(ui->cameraWidget, SIGNAL(finishedSettingRoi(bool)), ui->buttonRoiPoint, SLOT(setChecked(bool)));
     connect(ui->buttonDigitize, SIGNAL(toggled(bool)), this, SLOT(digitize(bool)));
     connect(ui->buttonCalibrateRt, SIGNAL(clicked()), this, SLOT(calibrateExternalParameters()));
+    connect(ui->sliderLinePowerThreshold, SIGNAL(valueChanged(int)), ui->spinLinePowerThreshold, SLOT(setValue(int)) );
+    connect(ui->spinLinePowerThreshold, SIGNAL(valueChanged(int)), ui->sliderLinePowerThreshold, SLOT(setValue(int)));
+    ui->spinLinePowerThreshold->setValue(ui->sliderLinePowerThreshold->value());
+    connect(ui->sliderPointPowerThreshold, SIGNAL(valueChanged(int)), ui->spinPointPowerThreshold, SLOT(setValue(int)) );
+    connect(ui->spinPointPowerThreshold, SIGNAL(valueChanged(int)), ui->sliderPointPowerThreshold, SLOT(setValue(int)));
+    ui->spinPointPowerThreshold->setValue(ui->sliderPointPowerThreshold->value());
+
     //ui->scrollCameraWidget->setWidget(ui->cameraWidget);
 
     //ui->cameraWidget->setAutoFillBackground(false);
@@ -149,6 +156,25 @@ void CenterDialog::connectCamera(bool connect)
             this->connect(m_threadCam, SIGNAL(newScanData()), this, SLOT(updateHeightmapWidget()));
             this->connect(ui->buttonHeightmapClear, SIGNAL(clicked()), m_threadCam, SLOT(clearHeightmap()));
             this->connect(ui->button3D, SIGNAL(clicked()), m_threadCam, SLOT(triangulatePointCloud()));
+            this->connect(ui->sliderLinePowerThreshold, SIGNAL(valueChanged(int)), m_threadCam, SLOT(setPowerThresholdLine(int)));
+
+            m_threadCam->setPowerThresholdLine(ui->sliderLinePowerThreshold->value());
+            this->connect(ui->sliderPointPowerThreshold, SIGNAL(valueChanged(int)), m_threadCam, SLOT(setPowerThresholdPoint(int)));
+            m_threadCam->setPowerThresholdPoint(ui->sliderPointPowerThreshold->value());
+
+            m_threadCam->setScaleX(ui->spinScaleX->value());
+            this->connect(ui->spinScaleX, SIGNAL(valueChanged(double)), m_threadCam, SLOT(setScaleX(double)));
+            m_threadCam->setScaleY(ui->spinScaleY->value());
+            this->connect(ui->spinScaleY, SIGNAL(valueChanged(double)), m_threadCam, SLOT(setScaleY(double)));
+            m_threadCam->setScaleZ(ui->spinScaleZ->value());
+            this->connect(ui->spinScaleZ, SIGNAL(valueChanged(double)), m_threadCam, SLOT(setScaleZ(double)));
+
+            m_threadCam->setOffsetX(ui->spinOffsetX->value());
+            this->connect(ui->spinOffsetX, SIGNAL(valueChanged(double)), m_threadCam, SLOT(setOffsetX(double)));
+            m_threadCam->setOffsetY(ui->spinOffsetY->value());
+            this->connect(ui->spinOffsetY, SIGNAL(valueChanged(double)), m_threadCam, SLOT(setOffsetY(double)));
+            m_threadCam->setOffsetZ(ui->spinOffsetZ->value());
+            this->connect(ui->spinOffsetZ, SIGNAL(valueChanged(double)), m_threadCam, SLOT(setOffsetZ(double)));
         } else {
             QMessageBox::critical(this,"Camera connect failed", "Could not get camera ID. Try rescanning for cameras.");
         }
@@ -231,6 +257,7 @@ void CenterDialog::updateHeightmapWidget()
 {
     if (m_threadCam) {
         ui->heightmapWidget->setImage(m_threadCam->m_scanData);
+        ui->heightmapWidget->update();
     }
 }
 
