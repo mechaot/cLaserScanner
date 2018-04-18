@@ -1,8 +1,8 @@
 #ifndef CENTERDIALOG_H
 #define CENTERDIALOG_H
 
-#include <QDialog>
-#include "ui_centerdialog.h"
+#include <QtWidgets/QDialog>
+//#include "ui_centerdialog.h"
 
 #include <opencv.hpp>
 #include "cameraThread.h"

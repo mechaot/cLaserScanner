@@ -1,11 +1,11 @@
 #ifndef CAMERAWIDGET_H
 #define CAMERAWIDGET_H
 
-#include <QWidget>
-#include <QPen>
-#include <QRect>
-#include <QPoint>
-#include <QPointF>
+#include <QtWidgets/QWidget>
+#include <QtGui/QPen>
+#include <QtCore/QRect>
+#include <QtCore/QPoint>
+#include <QtCore/QPointF>
 //#include <opencv.hpp>
 
 #include "opencv2/core/core.hpp"

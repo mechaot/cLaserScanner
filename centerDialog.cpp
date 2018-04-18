@@ -2,13 +2,15 @@
 #define CENTERDIALOG_CPP
 
 #include "centerDialog.h"
-//#include "ui_centerdialog.h"
+#include "ui_centerdialog.h"
 #include <QtGui>
 #include "opencv2/calib3d/calib3d.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "QtException.h"
 #include "settings.h"
+#include <QtWidgets/QMessageBox>
+#include <QtWidgets/QProgressDialog>
 
 using namespace cv;
 

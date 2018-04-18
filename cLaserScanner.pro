@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core gui widgets
 
 include(QtException/QtException.pri)
 
@@ -28,8 +28,9 @@ HEADERS  += mainwindow.h \
     cameraThread.h \
     settings.h
 
-FORMS    += mainwindow.ui \
-    centerdialog.ui
+FORMS    += \
+    centerdialog.ui \
+    mainwindow.ui
 
 win32 {
     QMAKE_CXXFLAGS += -m32
@@ -38,7 +39,7 @@ win32 {
 
 unix {
     QMAKE_CXXFLAGS += -fopenmp
-    LIBS += -L/usr/local/lib -lopencv_highgui -lopencv_core -lopencv_imgproc -lopencv_calib3d -Lomp -lgomp
+    LIBS += -L/usr/local/lib -lopencv_highgui -lopencv_videoio -lopencv_core -lopencv_imgproc -lopencv_calib3d -Lomp -lgomp
 }
 
 

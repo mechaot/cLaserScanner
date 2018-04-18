@@ -1,8 +1,9 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include <QMainWindow>
+#include <QtWidgets/QMainWindow>
 #include <opencv.hpp>
+#include "ui_mainwindow.h"
 
 
 #define MAX_OPENCV_CAMERA 4 ///< maximum number of cameras to try detection

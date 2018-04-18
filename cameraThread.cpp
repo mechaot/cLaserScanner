@@ -596,7 +596,7 @@ void CameraThread::triangulatePointCloud()
             *data = z;
             ++data;
             if (z != 0)
-                file.write( QString("%1 %2 %3 0. 0. 1.\n").arg(((double)x - m_dOffsetX)/m_dScaleX ).arg(((double)y - m_dOffsetY)/m_dScaleY ).arg(((double)z - m_dOffsetZ)/(-m_dScaleZ)).toAscii() );
+                file.write( QString("%1 %2 %3 0. 0. 1.\n").arg(((double)x - m_dOffsetX)/m_dScaleX ).arg(((double)y - m_dOffsetY)/m_dScaleY ).arg(((double)z - m_dOffsetZ)/(-m_dScaleZ)).toLatin1() );
         }
     }
     file.flush();

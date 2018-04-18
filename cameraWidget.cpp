@@ -3,6 +3,7 @@
 #include "QtGui"
 #include "QtCore"
 #include "settings.h"
+#include <QtWidgets/QMessageBox>
 
 #ifndef UINT8
     typedef unsigned char UINT8;

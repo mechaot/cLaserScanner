@@ -1,8 +1,8 @@
+
 #include "mainwindow.h"
-#include "ui_mainwindow.h"
 #include "centerDialog.h"
 
-#include <QMessageBox>
+#include <QtWidgets/QMessageBox>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
