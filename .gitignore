@@ -1,0 +1,9 @@
+*.pyc
+*.pem
+*.key
+*.bak
+*.pkl
+*.png
+*.o
+ui_*
+build/
